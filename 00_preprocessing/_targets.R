@@ -128,6 +128,7 @@ list(
   tar_target(meta, read_metadata(meta_path)),
   tar_target(exp_03, add_meta_to_exp(exp_02, meta)),
   tar_target(exp_04, mapCamp(exp_03, class="all")),
-  transfer_campbell_labels_pipeline
-  # find_degs
+  transfer_campbell_labels_pipeline,
+  make_strain_subsets,
+  find_degs
 )

@@ -109,7 +109,7 @@ sc_transform_fgf1 = function(fgf1){
     fgf1 <- Seurat::SCTransform(fgf1,
                         assay='RNA',
                         method="glmGamPoi",
-                        vars.to.regress="comments",
+                        vars.to.regress="batch",
                         vst.flavor="v2",
                         verbose=TRUE)
     fgf1 = run_sct_chaser(fgf1, resolution=0.8)
