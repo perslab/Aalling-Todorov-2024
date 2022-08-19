@@ -157,7 +157,7 @@ subset_exp = function(exp, class="all"){
     exp
 }
 
-subsest_exp_by_strain(exp, strain){
+subsest_exp_by_strain = function(exp, strain){
     exp = subset(x = exp,
                  subset = 'strain' == strain)
     exp
