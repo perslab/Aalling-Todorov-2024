@@ -8,12 +8,12 @@
 ##' @author dylanmr
 ##' @export
 
-mapCamp <- function(query, dims=40, class = NULL) {
+mapCamp <- function(query, dims=40, class = "clust_all_neurons") {
   
   camp <- scRNAseq::CampbellBrainData()
 
   neurlabs <- 
-    read.table(here::here("data/campbell_meta.txt"), header=T) %>% 
+    read.table(here::here("campbell_meta.txt"), header=T) %>% 
     distinct(NeuronsOnlyClusters, .keep_all=T) %>% 
     filter(NeuronsOnlyClusters != "Non-neuronal") %>% 
     mutate(cluster_labs = stringr::str_split_fixed(NeuronsOnlyClusters, pattern = "[.]", n = 2)[,2] %>%  
@@ -26,7 +26,7 @@ mapCamp <- function(query, dims=40, class = NULL) {
     )
   
   glialabs <- 
-    read.table(here::here("data/campbell_meta.txt"), header=T)  %>% 
+    read.table(here::here("campbell_meta.txt"), header=T)  %>% 
     distinct(AllCellSubclusters, .keep_all=T) %>% 
     filter(NeuronsOnlyClusters == "Non-neuronal") %>% 
     mutate(cluster_labs = stringr::str_split_fixed(AllCellSubclusters, pattern = "[.]", n = 2)[,2] %>%  str_replace_all(pattern = "/", replacement = "_"),
@@ -40,14 +40,14 @@ mapCamp <- function(query, dims=40, class = NULL) {
                                     grepl("Olig.*[1|2|3|4]", cluster_labs) ~ "MOL",
                                     T ~ cluster_labs))
   
-  if(is.null(class)) {
+  if(class == 'all') {
     refdata <- camp$clust_all_neurons
   } else if(class == "neuron") {
     camp <- camp[,camp$clust_neurons%in%neurlabs$numeric_labs]
     rename <- neurlabs$numeric_labs
     names(rename) <- neurlabs$cluster_labs
     refdata <- fct_recode(camp$clust_neurons, !!!rename)
-  } else if(class == "glia"){
+  } else if(class == "other"){
     camp <- camp[,camp$clust_all_micro%in%glialabs$numeric_labs]
     rename <- glialabs$numeric_labs
     names(rename) <- glialabs$cluster_labs
@@ -58,14 +58,29 @@ mapCamp <- function(query, dims=40, class = NULL) {
   
   camp <- CreateSeuratObject(counts = counts(camp)) %>% 
     SCTransform(vst.flavor = "v2")
+#   camp <- scRNAseq::CampbellBrainData()
+#   camp <- Seurat::as.Seurat(camp, counts = "counts", data="counts")
+#   camp <- Seurat::SCTransform(camp,
+#                               assay='originalexp',
+#                               method="glmGamPoi",
+#                               vars.to.regress="batches",
+#                               vst.flavor="v2",
+#                               verbose=TRUE)
   anch <- FindTransferAnchors(reference = camp, query = query, normalization.method = "SCT", recompute.residuals = F)
   predictions <- TransferData(anchorset = anch, refdata = refdata) %>% 
     dplyr::select(predicted.id, prediction.score.max)
   query <- AddMetaData(query, metadata = predictions)
+  #add predictions object to dataset
+  Misc(object = query, slot = paste0("predictions_", class)) <- predictions
   
   # get proportion of predicted.ids that map to each cluster
+  clustering_res_name = .DollarNames(query) %>% #default is SCT_snn_res.0.8
+    str_detect('res.') %>% 
+    which %>% 
+    .DollarNames(query)[.] %>% 
+    .[order(., decreasing=TRUE)] # take the highest resolution
   cluster_names <- 
-    prop.table(table(query$SCT_snn_res.0.8, query$predicted.id), margin = 1) %>% 
+    prop.table(table(query@meta.data[[clustering_res_name]], query$predicted.id), margin = 1) %>% 
     data.frame()
   
   # if more than 25% of cells in a cluster map to 2 predicted.ids, label cluster as a combination
@@ -81,7 +96,7 @@ mapCamp <- function(query, dims=40, class = NULL) {
   # add labels to object  
   labels <- unique(cluster_names$Var1) %>%  as.character()
   names(labels) <- cluster_split
-  query$labels <- fct_recode(query$SCT_snn_res.0.8, !!!labels)
+  query$labels <- fct_recode(query@meta.data[[clustering_res_name]], !!!labels)
   
   return(query)
 

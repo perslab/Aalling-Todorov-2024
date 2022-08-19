@@ -16,7 +16,7 @@ library(tidyr)
 # Set target options:
 tar_option_set(
 #   packages = c("tibble"), # packages that your targets need to run
-  format = "rds" # default storage format
+  format = "qs" # default storage format
   # Set other options as needed.
 )
 
@@ -37,22 +37,76 @@ source(paste0("preprocessing.R"))
 
 tar_option_set(packages = c("readr", "dplyr", "ggplot2"))
 
-values <- tibble(
-  campbell_subset = rlang::syms(c("campbell_sct_neurons_00", "campbell_sct_other_00")),
-  exp_subset = rlang::syms(c("exp_neurons_00", "exp_other_00")),
-  names = c("neurons", "other")
+tcl_values <- tibble(
+  subset_class = c("neuron", "other"),
+  names = c("neuron", "other")
 )
 transfer_campbell_labels_pipeline = tar_map(
-  values = values,
+  values = tcl_values,
   names = "names",
-  tar_target(campbell_sct_sub_01, sc_transform_campbell(campbell_subset)),
-  tar_target(exp_sub_01, sc_transform_fgf1(exp_subset)),
-  tar_target(transfer_anchors_campbell_sub, find_anchors_campbell(exp_sub_01, campbell_sct_sub_01)),
-  tar_target(exp_sub_02, transfer_campbell_labels(exp_sub_01, campbell_sct_sub_01, transfer_anchors_campbell_sub)),
-  tar_target(exp_sub_03, run_pca(exp_sub_02)),
-  tar_target(exp_sub_04, run_umap(exp_sub_03))
+  tar_target(exp_subset,
+             subset_exp(exp_04, class=subset_class)),
+  tar_target(exp_subset_sct, sc_transform_fgf1(exp_subset)),
+  tar_target(exp_labelled,
+             mapCamp(exp_subset_sct, class=subset_class))
+  
 )
 transfer_campbell_labels_pipeline = list(transfer_campbell_labels_pipeline)
+
+design_edger = c("treatment", "time")
+batch_edger = c("pool")
+contrasts_list = c("FGF1.Day5-Veh_PF.Day5",
+                   "FGF1.Day14-Veh_PF.Day14")
+deg_values <- tibble(
+  input_objs_deg = rlang::syms(c("exp_labelled_other", "exp_labelled_other", "exp_labelled_neuron", "exp_labelled_neuron")),
+  split_by_col = c("labels", "predicted.id", "labels", "predicted.id"),
+  names = c("other_labels", "other_predicted.id", "neuron_labels", "neuron_predicted.id")
+)
+find_degs = tar_map(
+  values = deg_values,
+  names = "names",
+  tar_target(edger,
+             splitwrapper(input_objs_deg, split.by=split_by_col) %>% 
+             map(~build_edger(.x, 10, design = design_edger, batch = batch_edger)) %>%
+             add_cluster_names()),
+  tar_target(qlf,
+             get_qlf(edger, contrasts_list)),
+  tar_target(top_tags,
+             get_toptags(qlf))
+)
+
+subset_values = tibble(
+  obj_to_subset = rlang::syms(c("exp_labelled_neuron", "exp_labelled_neuron", "exp_labelled_other", "exp_labelled_other")),
+  strain = c("obob", "BL6")
+  names = c("neuron_obob", "neuron_BL6", "other_obob", "other_BL6")
+)
+make_strain_subsets = tar_map(
+  values = subset_values,
+  names = 'names',
+  tar_target(exp, subsest_exp_by_strain(obj_to_subset, strain))
+)
+
+design_edger_obob = c("treatment", "time")
+batch_edger_obob = c("pool")
+contrasts_list_obob = c("FGF1.Day5-Veh_PF.Day5",
+                   "FGF1.Day14-Veh_PF.Day14")
+deg_values <- tibble(
+  input_objs_deg = rlang::syms(c("exp_other_obob", "exp_other_obob", "exp_neuron_obob", "exp_neuron_obob")),
+  split_by_col = c("labels", "predicted.id", "labels", "predicted.id"),
+  names = c("obob_other_labels", "obob_other_predicted.id", "obob_neuron_labels", "obob_neuron_predicted.id")
+)
+find_degs = tar_map(
+  values = deg_values,
+  names = "names",
+  tar_target(edger,
+             splitwrapper(input_objs_deg, split.by=split_by_col) %>% 
+             map(~build_edger(.x, 10, design = design_edger, batch = batch_edger)) %>%
+             add_cluster_names()),
+  tar_target(qlf,
+             get_qlf(edger, contrasts_list_obob)),
+  tar_target(top_tags,
+             get_toptags(qlf))
+)
 
 
 list(    
@@ -72,13 +126,7 @@ list(
   tar_target(meta_path, paste0(PROJECT_DIR, 'data/meta/metadata.csv'), format = "file"),
   tar_target(meta, read_metadata(meta_path)),
   tar_target(exp_03, add_meta_to_exp(exp_02, meta)),
-  tar_target(campbell, load_campbell()),
-  tar_target(campbell_sct, sc_transform_campbell(campbell)),
-  tar_target(transfer_anchors_campbell, find_anchors_campbell(exp_03, campbell_sct)),
-  tar_target(exp_04, transfer_campbell_labels(exp_03, campbell, transfer_anchors_campbell)),
-  tar_target(exp_neurons_00, subset_neurons(exp_04)),
-  tar_target(exp_other_00, subset_other(exp_04)),
-  tar_target(campbell_sct_neurons_00, subset_neurons(campbell_sct)),
-  tar_target(campbell_sct_other_00, subset_other(campbell_sct)),
+  tar_target(exp_04, mapCamp(exp_03, class="all")),
   transfer_campbell_labels_pipeline
+  # find_degs
 )

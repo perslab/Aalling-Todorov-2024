@@ -86,12 +86,33 @@ sc_transform_campbell = function(campbell){
     campbell
 }
 
+run_find_neighbors = function(exp){
+    exp = Seurat::FindNeighbors(exp, dims = 1:30, verbose = FALSE)
+    exp
+}
+
+run_find_clusters = function(exp, resolution=0.8){
+    exp = Seurat::FindClusters(exp, verbose = FALSE, resolution=resolution)
+    exp@meta.data$seurat_clusters = exp$seurat_clusters
+    exp
+}
+
+run_sct_chaser = function(exp, resolution=0.8){
+    exp = run_pca(exp)
+    exp = run_umap(exp)
+    exp = run_find_neighbors(exp)
+    exp = run_find_clusters(exp, resolution=resolution)
+    exp
+}
+
 sc_transform_fgf1 = function(fgf1){
     fgf1 <- Seurat::SCTransform(fgf1,
                         assay='RNA',
                         method="glmGamPoi",
                         vars.to.regress="comments",
+                        vst.flavor="v2",
                         verbose=TRUE)
+    fgf1 = run_sct_chaser(fgf1, resolution=0.8)
     fgf1
 }
 
@@ -122,12 +143,22 @@ transfer_campbell_labels = function(exp, campbell, transfer_anchors){
 }
 
 
-subset_neurons = function(exp){
-    exp = subset(x = exp, subset = clust_all_neurons == 'neuron')
+subset_exp = function(exp, class="all"){
+    if (class == 'all') {
+        exp = exp
+    } else if (class=='neuron'){
+        exp_neuron = subset(x = exp, subset = predicted.id == 'neuron')
+        exp_miss = subset(x = exp, subset = predicted.id == 'miss')
+        exp = merge(exp_neuron, exp_miss)
+        exp
+    } else if (class=='other'){
+        exp = subset(x = exp, subset = predicted.id != 'neuron')
+    }
     exp
 }
 
-subset_other = function(exp){
-    exp = subset(x = exp, subset = clust_all_neurons != 'neuron')
+subsest_exp_by_strain(exp, strain){
+    exp = subset(x = exp,
+                 subset = 'strain' == strain)
     exp
 }
