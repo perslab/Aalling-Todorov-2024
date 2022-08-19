@@ -34,6 +34,7 @@ lapply(list.files("R", full.names = TRUE, recursive = TRUE), source)
 # source("other_functions.R") # Source other scripts as needed. # nolint
 
 source(paste0("preprocessing.R"))
+source("mapCamp.R")
 
 tar_option_set(packages = c("readr", "dplyr", "ggplot2"))
 
@@ -77,7 +78,7 @@ find_degs = tar_map(
 
 subset_values = tibble(
   obj_to_subset = rlang::syms(c("exp_labelled_neuron", "exp_labelled_neuron", "exp_labelled_other", "exp_labelled_other")),
-  strain = c("obob", "BL6")
+  strain = c("obob", "BL6", "obob", "BL6"),
   names = c("neuron_obob", "neuron_BL6", "other_obob", "other_BL6")
 )
 make_strain_subsets = tar_map(
@@ -100,7 +101,7 @@ find_degs = tar_map(
   names = "names",
   tar_target(edger,
              splitwrapper(input_objs_deg, split.by=split_by_col) %>% 
-             map(~build_edger(.x, 10, design = design_edger, batch = batch_edger)) %>%
+             map(~build_edger(.x, 10, design = design_edger_obob, batch = batch_edger_obob)) %>%
              add_cluster_names()),
   tar_target(qlf,
              get_qlf(edger, contrasts_list_obob)),
