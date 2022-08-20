@@ -24,7 +24,7 @@ library(edgeR)
     mutate(hash = str_replace_all(hash, "-", '__')) %>%
     # mutate(Group = str_replace_all(Group, "-", '__')) %>%
     # mutate(Genotype = str_replace_all(Genotype, "-", '__')) %>%
-    mutate(batch = str_replace_all(batch, " ", '__')) %>%
+    mutate(batch = str_replace_all(batch, fixed(" "), '__')) %>%
     rownames_to_column("cell") %>% 
     group_by(hash) %>% 
     mutate(n = n()) %>% 
@@ -94,7 +94,7 @@ add_cluster_names = function(edger){
     qlf
 }
 
-.fit_qlf_p = purrr::possibly(.fit_qlf, otherwise=NULL)
+.fit_qlf_p = purrr::safely(.fit_qlf, quiet=FALSE)
 
 get_qlf <- function(edger_list, contrasts_list){
   edger_contrasts_list = purrr::cross(list(edger=edger_list, contrasts_str=contrasts_list))
@@ -104,14 +104,15 @@ get_qlf <- function(edger_list, contrasts_list){
 }
 
 .qlf2toptags = function(qlf){
-    toptags = edgeR::topTags(qlf, p.value=1, n=1e6)
-    toptags$cluster_name = qlf$cluster_name
+    toptags = edgeR::topTags(qlf$result, p.value=1, n=1e6)
+    toptags$cluster_name = qlf$result$cluster_name
     toptags
 }
-.qlf2toptags_p = purrr::possibly(.qlf2toptags, otherwise = NULL)
+.qlf2toptags_p = purrr::safely(.qlf2toptags, quiet=FALSE)
 get_toptags <- function(qlf_list){
     toptags_list = qlf_list %>%
       map(~.qlf2toptags_p(.x))
+    toptags_list
 }
 
 build_edger <- purrr::safely(.build_edger, quiet = FALSE)
