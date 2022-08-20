@@ -70,8 +70,8 @@ make_strain_subsets = tar_map(
 
 design_edger_obob = c("treatment", "time")
 batch_edger_obob = c("batch")
-contrasts_list_obob = c("FGF1.Day5-Veh_PF.Day5",
-                   "FGF1.Day14-Veh_PF.Day14")
+contrasts_list_obob = c("groupFGF1.Day5-groupVeh_PF.Day5",
+                   "groupFGF1.Day14-groupVeh_PF.Day14")
 deg_values <- tibble(
   input_objs_deg = rlang::syms(c("exp_other_obob", "exp_other_obob", "exp_neuron_obob", "exp_neuron_obob")),
   split_by_col = c("labels", "predicted.id", "labels", "predicted.id"),
