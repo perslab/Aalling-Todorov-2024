@@ -22,9 +22,9 @@ library(edgeR)
     obj[[]] %>%  
     plyr::rename(c('hash.mcl.ID'='hash')) %>%
     mutate(hash = str_replace_all(hash, "-", '__')) %>%
-    mutate(Group = str_replace_all(Group, "-", '__')) %>%
-    mutate(Genotype = str_replace_all(Genotype, "-", '__')) %>%
-    mutate(pool = str_replace_all(pool, "-", '__')) %>%
+    # mutate(Group = str_replace_all(Group, "-", '__')) %>%
+    # mutate(Genotype = str_replace_all(Genotype, "-", '__')) %>%
+    mutate(batch = str_replace_all(batch, " ", '__')) %>%
     rownames_to_column("cell") %>% 
     group_by(hash) %>% 
     mutate(n = n()) %>% 
