@@ -35,6 +35,8 @@ lapply(list.files("R", full.names = TRUE, recursive = TRUE), source)
 
 source(paste0("preprocessing.R"))
 source("mapCamp.R")
+source("build_edger.R")
+source("splitwrapper.R")
 
 tar_option_set(packages = c("readr", "dplyr", "ggplot2"))
 
@@ -54,27 +56,6 @@ transfer_campbell_labels_pipeline = tar_map(
 )
 transfer_campbell_labels_pipeline = list(transfer_campbell_labels_pipeline)
 
-design_edger = c("treatment", "time")
-batch_edger = c("pool")
-contrasts_list = c("FGF1.Day5-Veh_PF.Day5",
-                   "FGF1.Day14-Veh_PF.Day14")
-deg_values <- tibble(
-  input_objs_deg = rlang::syms(c("exp_labelled_other", "exp_labelled_other", "exp_labelled_neuron", "exp_labelled_neuron")),
-  split_by_col = c("labels", "predicted.id", "labels", "predicted.id"),
-  names = c("other_labels", "other_predicted.id", "neuron_labels", "neuron_predicted.id")
-)
-find_degs = tar_map(
-  values = deg_values,
-  names = "names",
-  tar_target(edger,
-             splitwrapper(input_objs_deg, split.by=split_by_col) %>% 
-             map(~build_edger(.x, 10, design = design_edger, batch = batch_edger)) %>%
-             add_cluster_names()),
-  tar_target(qlf,
-             get_qlf(edger, contrasts_list)),
-  tar_target(top_tags,
-             get_toptags(qlf))
-)
 
 subset_values = tibble(
   obj_to_subset = rlang::syms(c("exp_labelled_neuron", "exp_labelled_neuron", "exp_labelled_other", "exp_labelled_other")),
@@ -84,11 +65,11 @@ subset_values = tibble(
 make_strain_subsets = tar_map(
   values = subset_values,
   names = 'names',
-  tar_target(exp, subsest_exp_by_strain(obj_to_subset, strain))
+  tar_target(exp, subset_exp_by_strain(obj_to_subset, strain))
 )
 
 design_edger_obob = c("treatment", "time")
-batch_edger_obob = c("pool")
+batch_edger_obob = c("batch")
 contrasts_list_obob = c("FGF1.Day5-Veh_PF.Day5",
                    "FGF1.Day14-Veh_PF.Day14")
 deg_values <- tibble(
