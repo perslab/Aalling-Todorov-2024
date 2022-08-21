@@ -113,6 +113,7 @@ get_qlf <- function(edger_list, contrasts_list){
 .qlf2toptags = function(qlf){
     toptags = edgeR::topTags(qlf$result, p.value=1, n=1e6)
     toptags$cluster_name = qlf$result$cluster_name
+    toptags$comparison = qlf$result$comparison #this was commented
     toptags
 }
 .qlf2toptags_p = purrr::safely(.qlf2toptags, quiet=FALSE)
