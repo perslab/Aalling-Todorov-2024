@@ -66,6 +66,10 @@ add_cluster_names = function(edger){
     a$result$name = b
     a
     })
+    names_vec = edger %>% 
+        map(~.x$name) %>%
+        names
+    
     edger
 }
 
