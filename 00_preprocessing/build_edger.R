@@ -103,7 +103,7 @@ add_cluster_names = function(edger){
 get_qlf <- function(edger_list, contrasts_list){
   edger_contrasts_list = purrr::cross(list(edger=edger_list, contrasts_str=contrasts_list))
   qlf_list = edger_contrasts_list %>%
-    map(~.fit_qlf_p(.x$edger, c(.x$contrasts_str))) 
+    map(~.fit_qlf_p(.x$edger, c(.x$contrasts_str)))
   names_vec = qlf_list %>% 
     map(~paste0(.x$result$cluster_name, '___', .x$result$comparison))
   qlf_list = rlang::set_names(qlf_list, names_vec)
@@ -143,6 +143,5 @@ bind_top_tags_list = function(top_tags_list){
 }
 
 build_edger <- purrr::safely(.build_edger, quiet = FALSE)
-# get_qlf_p <- purrr::possibly(.get_qlf, otherwise = NULL)
-safe_toptags <- purrr::possibly(edgeR::topTags, otherwise = NULL)
+
 
