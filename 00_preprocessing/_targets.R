@@ -37,6 +37,7 @@ source(paste0("preprocessing.R"))
 source("mapCamp.R")
 source("build_edger.R")
 source("splitwrapper.R")
+source("gprofiler_requests.R")
 
 tar_option_set(packages = c("readr", "dplyr", "ggplot2"))
 
@@ -90,6 +91,15 @@ find_degs = tar_map(
              get_toptags(qlf))
 )
 
+gpdf_values = tibble(
+  tt_obj = rlang::syms(c("top_tags_obob_neuron_labels", "top_tags_obob_other_labels")),
+  names = c("neuron_obob_gpdf", "other_obob_gpdf")
+)
+get_gpdfs = tar_map(
+  values = gpdf_values,
+  names = 'names',
+  tar_target(gpdf, get_gosts_df(tt_obj))
+)
 
 list(    
   tar_target(exp22_path, paste0(PROJECT_DIR, 'data/received/SCOP_2022_0189/Output/data/aggregated-filtered/20220622_mouse/20220622_mouse_rna-seurat.rds'), format = "file"),
