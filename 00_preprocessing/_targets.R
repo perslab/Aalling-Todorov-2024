@@ -105,6 +105,13 @@ bind_gpdfs = list(
     tar_target(gpdfb_other, bind_gosts_dfs(gpdf_other_obob_gpdf)),
     tar_target(gpdfb_neuron, bind_gosts_dfs(gpdf_neuron_obob_gpdf))
 )
+
+bind_top_tags = list(
+    tar_target(ttb_neuron, bind_top_tags_list(top_tags_obob_neuron_labels)),
+    tar_target(ttb_other, bind_top_tags_list(top_tags_obob_other_labels))
+)
+
+
 list(    
   tar_target(exp22_path, paste0(PROJECT_DIR, 'data/received/SCOP_2022_0189/Output/data/aggregated-filtered/20220622_mouse/20220622_mouse_rna-seurat.rds'), format = "file"),
   tar_target(exp23_path, paste0(PROJECT_DIR, 'data/received/SCOP_2022_0189/Output/data/aggregated-filtered/20220623_mouse/20220623_mouse_rna-seurat.rds'), format = "file"),
@@ -128,4 +135,5 @@ list(
   find_degs,
   get_gpdfs,
   bind_gpdfs,
+  bind_top_tags
 )
