@@ -117,9 +117,13 @@ get_qlf <- function(edger_list, contrasts_list){
     toptags
 }
 .qlf2toptags_p = purrr::safely(.qlf2toptags, quiet=FALSE)
+
 get_toptags <- function(qlf_list){
     toptags_list = qlf_list %>%
       map(~.qlf2toptags_p(.x))
+    names_vec = toptags_list %>% 
+        map(~paste0(.x$result$cluster_name, '___', .x$result$comparison))
+    toptags_list = rlang::set_names(toptags_list, names_vec)
     toptags_list
 }
 
