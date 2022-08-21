@@ -100,6 +100,9 @@ get_qlf <- function(edger_list, contrasts_list){
   edger_contrasts_list = purrr::cross(list(edger=edger_list, contrasts_str=contrasts_list))
   qlf_list = edger_contrasts_list %>%
     map(~.fit_qlf_p(.x$edger, c(.x$contrasts_str))) 
+  names_vec = qlf_list %>% 
+    map(~paste0(.x$result$cluster_name, '___', .x$result$comparison))
+  qlf_list = rlang::set_names(qlf_list, names_vec)
   qlf_list
 }
 
