@@ -101,6 +101,10 @@ get_gpdfs = tar_map(
   tar_target(gpdf, get_gosts_df(tt_obj))
 )
 
+bind_gpdfs = list(
+    tar_target(gpdfb_other, bind_gosts_dfs(gpdf_other_obob_gpdf)),
+    tar_target(gpdfb_neuron, bind_gosts_dfs(gpdf_neuron_obob_gpdf))
+)
 list(    
   tar_target(exp22_path, paste0(PROJECT_DIR, 'data/received/SCOP_2022_0189/Output/data/aggregated-filtered/20220622_mouse/20220622_mouse_rna-seurat.rds'), format = "file"),
   tar_target(exp23_path, paste0(PROJECT_DIR, 'data/received/SCOP_2022_0189/Output/data/aggregated-filtered/20220623_mouse/20220623_mouse_rna-seurat.rds'), format = "file"),
@@ -121,5 +125,7 @@ list(
   tar_target(exp_04, mapCamp(exp_03, class="all")),
   transfer_campbell_labels_pipeline,
   make_strain_subsets,
-  find_degs
+  find_degs,
+  get_gpdfs,
+  bind_gpdfs,
 )
