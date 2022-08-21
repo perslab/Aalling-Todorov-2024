@@ -127,6 +127,21 @@ get_toptags <- function(qlf_list){
     toptags_list
 }
 
+bind_top_tags_list = function(top_tags_list){
+    top_tags_list_b = top_tags_list %>%
+        keep( ~ !is.null(.x$result) ) %>%
+        map(~.x$result) %>%
+        map(function(item){
+            item$table$comparison = item$comparison
+            item$table$cluster_name = item$cluster_name
+            item$table$id = rownames(item$table)
+            item
+            }) %>%
+        map(~.x$table) %>%
+        data.table::rbindlist()
+    top_tags_list_b
+}
+
 build_edger <- purrr::safely(.build_edger, quiet = FALSE)
 # get_qlf_p <- purrr::possibly(.get_qlf, otherwise = NULL)
 safe_toptags <- purrr::possibly(edgeR::topTags, otherwise = NULL)
