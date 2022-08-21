@@ -6,4 +6,4 @@ renv::load(Sys.getenv("PROJECT_DIR"))
 #use qs to save obj
 targets::tar_option_set(format = "qs")
 #imports the Rprofile from your user dir
-source('~/.Rprofile')
+#source('~/.Rprofile')
