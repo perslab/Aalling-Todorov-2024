@@ -42,6 +42,14 @@ def request_gost(members):
     return r
 
 
+def list_to_str(some_list):
+    if some_list:
+        some_str = ' '.join(some_list)
+    else:
+        some_str = str(some_list)
+    return some_str
+
+
 def make_gost_df(module_members):
     module_name, members = [x for x in module_members.items()][0]
     cols = ['module',
@@ -98,14 +106,21 @@ def make_gost_df(module_members):
         intersections = gost_df['intersections'].tolist()
         intersections_remapped = []
         all_genes = []
-        for ix in intersections:
-            ix = [x if x is not None else [] for x in ix]
-            ix_idx = [i for i, e in enumerate(ix) if len(e) > 0]
-            members = [module_members[module_name][x] for x in ix_idx]
-            intersections_remapped.append(members)
-            all_genes.append(module_members[module_name])
+        if intersections != ['NA']:
+            for ix in intersections:
+                ix = [x if x is not None else [] for x in ix]
+                ix_idx = [i for i, e in enumerate(ix) if len(e) > 0]
+                ix_members = [module_members[module_name][x] for x in ix_idx]
+                intersections_remapped.append(ix_members)
+                all_genes.append(module_members[module_name])
+        else:
+            intersections_remapped = ['NA']
+            all_genes = [module_members[module_name]]
         gost_df['intersections'] = intersections_remapped
         gost_df['all_module_genes'] = all_genes
     gost_df['link'] = 'https://biit.cs.ut.ee/gplink/l/'+ request_gost_link(members).json()['result']
     gost_df = gost_df[cols]
+    gost_df['all_module_genes'] = [list_to_str(x) for x in gost_df['all_module_genes']]
+    gost_df['intersections'] = [list_to_str(x) for x in gost_df['intersections']]
+    gost_df['parents'] = [list_to_str(x) for x in gost_df['parents']]
     return gost_df
