@@ -93,7 +93,7 @@ find_degs = tar_map(
 
 gpdf_values = tibble(
   tt_obj = rlang::syms(c("top_tags_obob_neuron_labels", "top_tags_obob_other_labels")),
-  names = c("neuron_obob_gpdf", "other_obob_gpdf")
+  names = c("neuron_obob", "other_obob")
 )
 get_gpdfs = tar_map(
   values = gpdf_values,
@@ -102,8 +102,8 @@ get_gpdfs = tar_map(
 )
 
 bind_gpdfs = list(
-    tar_target(gpdfb_other, bind_gosts_dfs(gpdf_other_obob_gpdf)),
-    tar_target(gpdfb_neuron, bind_gosts_dfs(gpdf_neuron_obob_gpdf))
+    tar_target(gpdfb_other, bind_gosts_dfs(gpdf_other_obob)),
+    tar_target(gpdfb_neuron, bind_gosts_dfs(gpdf_neuron_obob))
 )
 
 bind_top_tags = list(
