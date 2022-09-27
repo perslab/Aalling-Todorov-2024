@@ -5,3 +5,6 @@
 #pointing the TMPDIR to scratch speeds up temp file IO
 #make sure that the directory exists and you have write access!
 TMPDIR="/scratch/nmq407/R_tmp/"
+PROJECT_DIR="/projects/petar/fgf1/"
+R_ENVIRON_USER="/projects/petar/fgf1/.Renviron"
+R_PROFILE_USER="/projects/petar/fgf1/.Rprofile"
