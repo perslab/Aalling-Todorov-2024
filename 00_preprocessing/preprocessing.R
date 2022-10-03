@@ -194,3 +194,8 @@ make_new_seurat_ngo = function(exp){
     new_exp = CreateSeuratObject(counts=counts_exp, meta.data = exp@meta.data)
     new_exp
 }
+
+merge_neuron_and_other = function(exp_neuron, exp_other){
+    exp = merge(exp_neuron, y=exp_other)
+    exp
+}
