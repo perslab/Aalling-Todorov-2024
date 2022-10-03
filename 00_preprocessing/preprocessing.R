@@ -178,3 +178,19 @@ do_neuron_cluster_surgery = function(neuron){
     neuron
 }
 
+
+.get_only_named_genes = function(exp){
+    not_a_rik = exp@assays$RNA@meta.features %>% rownames %>% stringr::str_ends("Rik") %>% `!`
+    not_an_ensmusg = exp@assays$RNA@meta.features %>% rownames %>% stringr::str_starts("ENSMUSG") %>% `!`
+    not_a_Gm = exp@assays$RNA@meta.features %>% rownames %>% stringr::str_starts("Gm\\d") %>% `!`
+    not_4_or_more_digits = exp@assays$RNA@meta.features %>% rownames %>% stringr::str_ends("\\d{4,}") %>% `!`
+    only_named_genes = (not_a_rik & not_an_ensmusg & not_a_Gm & not_4_or_more_digits) %>% which
+    only_named_genes
+}
+
+make_new_seurat_ngo = function(exp){
+    counts_exp = GetAssayData(exp, slot="counts", assay="RNA") 
+    counts_exp = counts_exp[.get_only_named_genes(exp),]
+    new_exp = CreateSeuratObject(counts=counts_exp, meta.data = exp@meta.data)
+    new_exp
+}
