@@ -162,3 +162,19 @@ subset_exp_by_strain = function(exp, strain_id){
                  subset = strain == strain_id)
     exp
 }
+
+do_neuron_cluster_surgery = function(neuron){
+    md = neuron %>% 
+        `[[` %>% 
+        rownames_to_column("rownames") %>%
+        rowwise() %>% 
+        mutate(labels = ifelse(labels %in% c("Sst_Pthlh"), paste0(labels, '.sc', seurat_clusters), paste0(labels))) %>%
+        mutate(labels = ifelse(labels %in% c("Unassigned1"), paste0(labels, '.sc', seurat_clusters), paste0(labels))) %>% 
+        mutate(labels = ifelse(labels %in% c("Unassigned1.sc28", "Unassigned1.sc17"), "Unassigned1.sc17.sc28", paste0(labels))) %>%
+        mutate(labels = ifelse(labels %in% c("Unassigned1.sc49"), "Unassigned2", paste0(labels))) %>%  # this looks like its split off from sc29, an Unassigned2 clust
+        column_to_rownames("rownames") %>%
+        select(labels)
+    neuron = AddMetaData(neuron, metadata = md)
+    neuron
+}
+
