@@ -3,8 +3,8 @@
 #
 # Sys.setenv(PROJECT_DIR = "/projects/petar/fgf1/")
 #necessary to set the renv directory for your project
-options(renv.config.autoloader.enabled = FALSE,
-        box.path = paste0(Sys.getenv("PROJECT_DIR"), '/code'))
+
+options(renv.config.autoloader.enabled = FALSE)
 # renv::load(Sys.getenv("PROJECT_DIR"))
 #
 # if on hogg, load default profile. otherwise, ygg
