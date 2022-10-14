@@ -199,3 +199,10 @@ merge_neuron_and_other = function(exp_neuron, exp_other){
     exp = merge(exp_neuron, y=exp_other)
     exp
 }
+
+subset_seurat_obj_genes = function(exp, genes){
+    counts_exp = GetAssayData(exp, slot="counts", assay="RNA") 
+    counts_exp = counts_exp[genes,]
+    new_exp = CreateSeuratObject(counts=counts_exp, meta.data = exp@meta.data)
+    new_exp
+}
