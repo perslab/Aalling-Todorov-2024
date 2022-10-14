@@ -325,3 +325,13 @@ make_barcode_polarity_df = function(nonzero_mean_df, nhood_summary){
     barcode_df
 }
 
+
+make_pldf = function(barcode_df, milo_obj){
+    labels_df = milo_obj %>% `@`('colData') %>% data.frame %>% select(labels) %>% rownames_to_column(var = "barcodes")
+    pldf = left_join(labels_df, barcode_df) %>% 
+        mutate(polar_label = paste0(labels, '.', polarity)) %>%
+        select(-c(labels, polarity)) %>%
+        mutate(barcodes =  factor(barcodes, levels = labels_df$barcodes)) %>%
+        column_to_rownames("barcodes")
+    pldf
+}
