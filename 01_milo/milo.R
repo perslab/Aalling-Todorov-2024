@@ -267,3 +267,10 @@ combine_splits = function(da_results, nhm, min_cluster_frac=0.025, min_cells=100
 }
 
 
+make_logFC_cells_df = function(nhm, logFC_df){
+    logFC_cells = mapply(`*`, nhm, (logFC_df)) %>% as.data.frame
+    rownames(logFC_cells) = rownames(nhm)
+    logFC_cells
+}
+
+
