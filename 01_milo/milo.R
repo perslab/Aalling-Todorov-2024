@@ -274,3 +274,14 @@ make_logFC_cells_df = function(nhm, logFC_df){
 }
 
 
+nonzero_mean = function(x, na.rm=TRUE, zero.propagate = FALSE){
+  x = x[x != 0]
+  if (length(x) > 0){
+   nzm = mean(x)
+  } else {
+  nzm = 0
+  }
+  nzm
+}
+
+
