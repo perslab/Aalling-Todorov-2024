@@ -241,3 +241,29 @@ check_split_validity = function(nhood_summary, min_cluster_frac=0.025, min_cells
 }
 
 
+combine_splits = function(da_results, nhm, min_cluster_frac=0.025, min_cells=100){
+    while (TRUE){
+        nhood_summary = make_nhood_summary(da_results, nhm) %>%
+          check_split_validity(min_cluster_frac=0.025, min_cells=200)
+        if (dim(nhood_summary)[1] == 1){
+            # already combined!
+            return(da_results)
+        } else if (nhood_summary %>% pull(split_valid) %>% all()) {
+            # all splits valid
+            return(da_results)
+        } else {
+            # merges the smallest cluster
+            split_to_merge = nhood_summary %>% 
+                filter(split_valid == FALSE) %>%
+                arrange(n_cells) %>%
+                slice(1) 
+            old_polarity = split_to_merge$polarity
+            new_polarity = split_to_merge$adj_split
+            da_results = da_results %>%
+                mutate(polarity = case_when(polarity == old_polarity ~ new_polarity,
+                                            TRUE ~ polarity))
+        }
+    }
+}
+
+
