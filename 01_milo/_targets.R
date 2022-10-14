@@ -60,11 +60,24 @@ make_da_results = tar_map(
              get_da_results(milo_obj=milo_obj,
                             model_matrix=mm, design_df=design_df, model_contrasts_str=contrast)),
   tar_target(da_results_01,
-             add_polarity_to_da_results(da_results_00, spatial_fdr_cutoff=0.1)),
+             add_polarity_to_da_results(da_results_00, spatial_fdr_cutoff=0.1) %>%
+             annotate_nhoods(milo_obj, col="labels")),
+  tar_target(nhm,
+             make_nhm(milo_obj)),
   tar_target(da_results_02,
-             annotate_nhoods(da_results_01, milo_obj, col="labels")),
+             annotate_nhood_counts(da_results_01, nhm) %>%
+             combine_splits(., nhm)),
+  tar_target(nonzero_mean_df,
+             make_logFC_df(da_results_02) %>%
+             make_logFC_cells_df(nhm, .) %>%
+             make_nzdf(.)),
+  tar_target(nhood_summary,
+             make_nhood_summary(da_results_02, nhm) %>% check_split_validity()),
+  tar_target(barcode_df,
+             make_barcode_polarity_df(nonzero_mean_df, nhood_summary)),
   tar_target(pldf,
-             make_polar_labels_df(milo_obj, da_results_01, top_frac=0.1))
+             make_pldf(barcode_df, milo_obj))
+
 )
 
 
