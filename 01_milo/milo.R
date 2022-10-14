@@ -204,3 +204,18 @@ annotate_nhood_counts = function(da_results, nhm){
 }
 
 
+make_nhood_summary = function(da_results, nhm){
+    nhood_summary = da_results %>% 
+        # filter(SpatialFDR < 0.1) %>%
+        group_by(polarity) %>%
+        summarise(n_cells = sum(n_cells),
+                  n_nhoods = n()) %>%
+        mutate(cell_freq = n_cells/sum(n_cells),
+               nhood_freq = n_nhoods/sum(n_nhoods)) %>%
+        mutate(n_cells_nhood = n_cells)
+    nhood_summary = nhood_summary %>%
+        mutate(n_cells = round(dim(nhm)[1] * cell_freq))
+    nhood_summary
+}
+
+
