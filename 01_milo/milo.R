@@ -304,3 +304,24 @@ get_cell_freq = function(nhood_summary, split_name){
 }
 
 
+make_barcode_polarity_df = function(nonzero_mean_df, nhood_summary){
+    if (nhood_summary %>% filter(polarity == 'neg') %>% dim %>% `[`(1) %>% `>`(0)){
+        neg_cells = top_frac(nonzero_mean_df, -get_cell_freq(nhood_summary, 'neg'), wt=nonzero_sum) %>% 
+                      rownames %>% 
+                      data.frame(barcodes=., polarity=rep('neg', length(.)))
+    } else {
+        neg_cells = data.frame(barcodes=character(), polarity=character())
+    }
+    if (nhood_summary %>% filter(polarity == 'pos') %>% dim %>% `[`(1) %>% `>`(0)){
+        pos_cells = top_frac(nonzero_mean_df, get_cell_freq(nhood_summary, 'pos'), wt=nonzero_sum) %>% 
+                      rownames %>% 
+                      data.frame(barcodes=., polarity=rep('pos', length(.)))
+    } else {
+        pos_cells = data.frame(barcodes=character(), polarity=character())
+    }
+    none_cells = setdiff(rownames(nonzero_mean_df), union(neg_cells$barcodes, pos_cells$barcodes)) %>%
+                 data.frame(barcodes=., polarity=rep('none', length(.)))
+    barcode_df = rbind(neg_cells, none_cells, pos_cells)
+    barcode_df
+}
+
