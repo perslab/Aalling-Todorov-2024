@@ -187,3 +187,11 @@ make_logFC_df = function(da_results){
 }
 
 
+make_nhm = function(milo_obj){
+    nh = milo_obj@nhoods
+    nh@Dimnames[[2]] = seq(1:length(nh@Dimnames[[2]]))
+    nhm = nh %>% as.matrix %>% as.data.frame
+    nhm
+}
+
+
