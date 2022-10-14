@@ -295,3 +295,12 @@ make_nzdf = function(logFC_cells){
     nonzero_mean_df
 }
 
+
+get_cell_freq = function(nhood_summary, split_name){
+  cell_freq = ifelse(nhood_summary %>% filter(polarity == split_name) %>% nrow %>% `>`(0),
+                     nhood_summary %>% filter(polarity == split_name) %>% pull(cell_freq),
+                     as.double(0))
+  cell_freq
+}
+
+
