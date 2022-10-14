@@ -285,3 +285,13 @@ nonzero_mean = function(x, na.rm=TRUE, zero.propagate = FALSE){
 }
 
 
+make_nzdf = function(logFC_cells){
+    nonzero_mean_df = logFC_cells %>% rowwise() %>%
+    summarise(nonzero_mean = nonzero_mean(c_across(everything())),
+              nonzero_sum = sum(c_across(everything())))
+    nonzero_mean_df$rownames = rownames(logFC_cells)
+    nonzero_mean_df = nonzero_mean_df %>% as.data.frame %>% column_to_rownames(var = 'rownames')
+    nonzero_mean_df = nonzero_mean_df %>% arrange(nonzero_sum)
+    nonzero_mean_df
+}
+
