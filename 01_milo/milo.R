@@ -219,3 +219,25 @@ make_nhood_summary = function(da_results, nhm){
 }
 
 
+check_split_validity = function(nhood_summary, min_cluster_frac=0.025, min_cells=200){
+    nhood_summary = nhood_summary %>%
+        mutate(split_valid = case_when((cell_freq >= min_cluster_frac & n_cells >= min_cells) ~ TRUE,
+                                       TRUE ~ FALSE)) %>%
+        mutate(adj_split = NA)
+    if (dim(nhood_summary)[1] > 1){
+        nhood_summary = nhood_summary %>% 
+        mutate(adj_split = case_when(polarity == 'neg' ~ "none",
+                                     polarity == 'pos' ~ "none",
+                                     polarity == 'none' ~ 'huh'))
+        if (nhood_summary %>% pull(adj_split) %>% `==`('huh') %>% any()){
+            # this gets the smallest adj split to none, if 'none' is too small
+            pos_or_neg = nhood_summary %>% filter(polarity != 'none') %>% arrange(n_cells) %>% pull(polarity) %>% `[[`(1)
+            nhood_summary = nhood_summary %>% 
+              mutate(adj_split = case_when(adj_split == "huh" ~ pos_or_neg,
+                                           TRUE ~ adj_split))
+        }
+    }
+    nhood_summary
+}
+
+
