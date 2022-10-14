@@ -60,7 +60,7 @@ transfer_campbell_labels_pipeline = list(transfer_campbell_labels_pipeline)
 
 
 subset_values = tibble(
-  obj_to_subset = rlang::syms(c("exp_labelled_neuron", "exp_labelled_neuron", "exp_labelled_other", "exp_labelled_other")),
+  obj_to_subset = rlang::syms(c("exp_RElabelled_neuron", "exp_RElabelled_neuron", "exp_labelled_other", "exp_labelled_other")),
   strain = c("obob", "BL6", "obob", "BL6"),
   names = c("neuron_obob", "neuron_BL6", "other_obob", "other_BL6")
 )
@@ -133,6 +133,7 @@ list(
   tar_target(exp_03, add_meta_to_exp(exp_02, meta), cue=tar_cue(file=FALSE)),
   tar_target(exp_04, mapCamp(exp_03, class="all")),
   transfer_campbell_labels_pipeline,
+  tar_target(exp_RElabelled_neuron, do_neuron_cluster_surgery(exp_labelled_neuron)),
   make_strain_subsets,
   find_degs,
   get_gpdfs,
