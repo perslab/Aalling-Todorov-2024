@@ -195,3 +195,12 @@ make_nhm = function(milo_obj){
 }
 
 
+annotate_nhood_counts = function(da_results, nhm){
+    nhood_counts = nhm %>% colSums %>% enframe %>%
+      transmute(Nhood=name, n_cells=value) %>%
+      mutate(Nhood = as.double(Nhood))
+    da_results = dplyr::left_join(x=da_results, y=nhood_counts)
+    da_results
+}
+
+
