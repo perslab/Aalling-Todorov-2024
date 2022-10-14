@@ -176,3 +176,14 @@ annotate_nhoods = function(da_results, milo_obj, col){
     }
     da_results
 }
+
+
+#### new annotation methods
+
+make_logFC_df = function(da_results){
+    logFC_df = da_results %>% 
+        arrange(Nhood) %>% select(logFC) %>% t %>% as.data.frame
+    logFC_df 
+}
+
+
