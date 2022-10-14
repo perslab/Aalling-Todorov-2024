@@ -5,3 +5,13 @@
 **_targets
 **.ipynb_checkpoints/
 **renv/
+*.basilisk
+*.ipynb
+*.code-workspace
+*.rds
+*.pyc
+*.pkl
+*.env
+*.qs
+*.out
+*999_*
