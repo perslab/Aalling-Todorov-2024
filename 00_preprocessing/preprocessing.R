@@ -206,3 +206,8 @@ subset_seurat_obj_genes = function(exp, genes){
     new_exp = CreateSeuratObject(counts=counts_exp, meta.data = exp@meta.data)
     new_exp
 }
+
+sample_n_cells_from_obj = function(obj, n_cells){
+    subsampled_obj = obj[, sample(colnames(obj), size = n_cells, replace=F)]
+    subsampled_obj
+}
