@@ -335,3 +335,15 @@ make_pldf = function(barcode_df, milo_obj){
         column_to_rownames("barcodes")
     pldf
 }
+
+
+.get_only_named_genes_vec = function(vec_of_genes){
+    not_a_rik = vec_of_genes %>% stringr::str_ends("Rik") %>% `!`
+    not_an_ensmusg = vec_of_genes %>% stringr::str_starts("ENSMUSG") %>% `!`
+    not_a_Gm = vec_of_genes %>% stringr::str_starts("Gm\\d") %>% `!`
+    not_4_or_more_digits = vec_of_genes %>%  stringr::str_ends("\\d{4,}") %>% `!`
+    only_named_genes = (not_a_rik & not_an_ensmusg & not_a_Gm & not_4_or_more_digits) %>% which
+    only_named_genes
+}
+
+
