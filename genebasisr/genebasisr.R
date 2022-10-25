@@ -56,6 +56,16 @@ gbr_genes_stat_preselected_discard = function(sce, base_genes=NULL, n_genes=100,
 }
 
 
+gbr_genes_stat_preselected = function(sce, base_genes=NULL, n_genes=100, batch=NULL, drop_nng=TRUE){
+    if (drop_nng){
+        nng_vec = sce %>% get_sce_genes %>% get_not_named_genes_vec
+    } else {
+        nng_vec = NULL
+    }
+    genes_stat = geneBasisR::gene_search(sce,
+                                         genes_base=base_genes,
+                                         n_genes_total = n_genes,
+                                         genes.discard = nng_vec,
                              verbose = T)
     genes_stat
 }
