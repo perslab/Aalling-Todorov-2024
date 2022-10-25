@@ -82,6 +82,19 @@ make_da_results = tar_map(
 
 )
 
+milo_ngo_recipe = qs::qread('milo_ngo_tibble.qs')
+make_milo_ngo_markers = tar_map(
+  values = milo_ngo_recipe,
+  names = label,
+  tar_target(da_results_03,
+             set_polarity_da_results_NhoodGroup(da_results_obj)),
+  tar_target(nhood_markers_ngo,
+             get_nhood_markers(milo_obj, da_results_03, "hash.mcl.ID", 
+                               gene_subset=get_milo_ngo_genes_vec(milo_obj@assays@data$logcounts),
+                               subset_groups=polarity_comparison)),
+  tar_target(tmd_ngo,
+             get_top_milo_degs(nhood_markers_ngo, polarity_comparison, n_degs=10, tag=label))
+)
 
 
 list(    
