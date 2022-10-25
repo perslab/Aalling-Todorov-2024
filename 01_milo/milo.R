@@ -355,3 +355,10 @@ get_milo_ngo_genes_vec = function(milo_assay){
 }
 
 
+
+set_polarity_da_results_NhoodGroup = function(da_results){
+    da_results$NhoodGroup = da_results$polarity
+    da_results
+}
+
+
