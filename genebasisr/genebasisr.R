@@ -99,3 +99,13 @@ gbr_evaluate_lib = function(sce, selected_genes, celltype_id, library.size_type 
 }
 
 
+gbr_calc_redundancy_stat = function(sce, selected_genes, celltype_id, batch=NULL){
+    redundancy_stat = geneBasisR::get_redundancy_stat(sce,
+                                                      selected_genes$gene,
+                                                      genes_to_assess = selected_genes$gene,
+                                                      batch = batch,
+                                                      celltype.id = celltype_id
+                                                      ) 
+}
+
+
