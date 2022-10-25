@@ -14,7 +14,9 @@ plan(callr)
 tar_option_set(
 #   packages = c("tibble"), # packages that your targets need to run
   format = "qs", # default storage format,
-  error = "continue"
+  error = "continue",
+  retrieval = "worker",
+  storage = "worker"
   # Set other options as needed.
 )
 
