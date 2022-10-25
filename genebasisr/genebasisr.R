@@ -109,3 +109,8 @@ gbr_calc_redundancy_stat = function(sce, selected_genes, celltype_id, batch=NULL
 }
 
 
+do_first_sw_selection = function(genes_stat, n_first_selection){
+    genes_stat_first_selection = genes_stat[1:n_first_selection,]
+    genes_stat_first_selection
+}
+
