@@ -85,3 +85,17 @@ gbr_get_celltype_mapping = function(sce, selected_genes, celltype_id, batch=NULL
 }
 
 
+gbr_evaluate_lib = function(sce, selected_genes, celltype_id, library.size_type = "single", step=10, batch=NULL){
+    lib_stat = geneBasisR::evaluate_library(sce, 
+                                            selected_genes$gene, 
+                                            genes.all = rownames(sce), 
+                                            library.size_type = library.size_type,
+                                            celltype.id = celltype_id,
+                                            batch = batch,
+                                            n_genes.step = step,
+                                            return.cell_score_stat = T, return.gene_score_stat = T, return.celltype_stat = T,
+                                            verbose = T)
+    lib_stat
+}
+
+
