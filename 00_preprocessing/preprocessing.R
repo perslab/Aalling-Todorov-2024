@@ -198,6 +198,14 @@ get_only_named_genes_vec = function(vec_of_genes){
 }
 
 
+sce_retain_ngo_genes = function(sce){
+    sce_genes = rownames(logcounts(sce))
+    only_named_genes_vec = get_only_named_genes_vec(sce_genes)
+    sce_filtered = sce[only_named_genes_vec,]
+    sce_filtered
+}
+
+
 make_new_seurat_ngo = function(exp){
     counts_exp = GetAssayData(exp, slot="counts", assay="RNA") 
     counts_exp = counts_exp[.get_only_named_genes(exp),]
