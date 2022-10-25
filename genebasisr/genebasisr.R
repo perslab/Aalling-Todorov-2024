@@ -164,3 +164,16 @@ make_cell_score_stat_sw_selection = function(lib_stat, name, sce){
 }
 
 
+summarise_cell_score_stat_sw_selection = function(cell_score_stat){
+    cell_score_stat_summary = cell_score_stat %>%
+        group_by(labels) %>%
+        mutate(mean_cell_score.labels = mean(cell_score)) %>%
+        ungroup %>% group_by(polar_label) %>%
+        mutate(mean_cell_score.polar_label = mean(cell_score)) %>%
+        select(name, labels, polar_label, mean_cell_score.labels, mean_cell_score.polar_label) %>%
+        distinct %>% 
+        arrange(polar_label)
+    cell_score_stat_summary
+}
+
+
