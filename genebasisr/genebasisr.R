@@ -197,3 +197,15 @@ get_literature_genes_df = function(){
 }
 
 
+plot_ctm = function(ctm, name='', col_order=NULL){
+    if (is.null(col_order)){
+        col_order = ctm$mapping %>% pull(celltype) %>% unique %>% sort
+    } 
+    ctm$mapping = ctm$mapping %>%
+    mutate(celltype = factor(celltype, levels=col_order)) %>%
+    arrange(celltype)
+    p = geneBasisR::plot_mapping_heatmap(ctm$mapping, title = paste0("Cell type confusion matrix    ", name))
+    p
+}
+
+
