@@ -238,3 +238,11 @@ subset_obob5v5_from_obj = function(obj){
 }
 
 
+exclude_one_seurat_from_another = function(one_seurat, another_seurat){
+    one_seurat_cell_ids = one_seurat@meta.data %>% rownames
+    another_seurat_cell_ids = another_seurat@meta.data %>% rownames
+    diff_cell_ids = setdiff(another_seurat_cell_ids, one_seurat_cell_ids)
+    another_seurat = subset(another_seurat, cells=diff_cell_ids)
+    another_seurat
+}
+
