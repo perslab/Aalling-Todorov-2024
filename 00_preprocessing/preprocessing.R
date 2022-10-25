@@ -229,3 +229,12 @@ sample_n_cells_from_obj = function(obj, n_cells){
     subsampled_obj = obj[, sample(colnames(obj), size = n_cells, replace=F)]
     subsampled_obj
 }
+
+
+subset_obob5v5_from_obj = function(obj){
+    cell_ids = obj@meta.data %>% filter(strain == 'obob' & time == 'Day5') %>% rownames
+    obj = subset(obj, cells=cell_ids)
+    obj
+}
+
+
