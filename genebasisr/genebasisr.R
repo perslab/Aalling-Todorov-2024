@@ -152,3 +152,15 @@ make_lib_stat_sw_selection = function(sce, gene_stat_prior, celltype_id, library
 }
 
 
+make_cell_score_stat_sw_selection = function(lib_stat, name, sce){
+    cell_score_stat = lib_stat %>% 
+        `[[`("cell_score_stat") %>%
+        mutate(name = name)
+    meta = as.data.frame(colData(sce)) %>% 
+        select(labels, polar_label) %>%
+        rownames_to_column(var = 'cell')
+    cell_score_stat = left_join(cell_score_stat, meta) %>% tibble
+    cell_score_stat
+}
+
+
