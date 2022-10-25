@@ -75,7 +75,13 @@ get_selected_genes = function(genes_stat){
     genes
 }
 
-gbr_get_celltype_mapping = function(sce, genes, celltype_id){
-    celltype_mapping = get_celltype_mapping(sce , genes.selection = genes, celltype.id = celltype_id, return.stat = F)
+gbr_get_celltype_mapping = function(sce, selected_genes, celltype_id, batch=NULL){
+    celltype_mapping = geneBasisR::get_celltype_mapping(sce, 
+                                                        genes.selection = selected_genes$gene,
+                                                        celltype.id = celltype_id,
+                                                        batch = batch,
+                                                        return.stat = T)
     celltype_mapping
 }
+
+
