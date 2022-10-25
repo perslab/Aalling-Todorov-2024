@@ -347,3 +347,11 @@ make_pldf = function(barcode_df, milo_obj){
 }
 
 
+get_milo_ngo_genes_vec = function(milo_assay){
+    #milo assay such as milo_obj@assays@data$logcounts
+    ngo_genes_idx = milo_assay@Dimnames[[1]] %>% .get_only_named_genes_vec
+    ngo_genes_vec = milo_assay@Dimnames[[1]][ngo_genes_idx]
+    ngo_genes_vec
+}
+
+
