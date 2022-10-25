@@ -246,3 +246,8 @@ exclude_one_seurat_from_another = function(one_seurat, another_seurat){
     another_seurat
 }
 
+
+add_metadata_label_to_seurat = function(obj, label_str, col_name){
+    obj = AddMetaData(obj, label_str, col.name = col_name)
+    obj
+}
