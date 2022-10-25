@@ -182,3 +182,18 @@ get_sce_genes = function(sce){
     gene_names
 }
 
+get_literature_genes_df = function(){
+    lgdf = data.frame(gene = c("Pdgfra", # (OPC)
+                               "Bmp4", # (NFOL)
+                               "Plp1", # (MOL)
+                               "Aqp4", # (Astro)
+                               "Rax", # (tany)
+                               "Agrp",
+                               "Pomc",
+                               "Htr3b",
+                               "Lef1",
+                               "Lmx1a"))
+    lgdf
+}
+
+
