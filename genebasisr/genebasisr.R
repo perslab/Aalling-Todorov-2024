@@ -114,3 +114,22 @@ do_first_sw_selection = function(genes_stat, n_first_selection){
     genes_stat_first_selection
 }
 
+do_next_sw_selection = function(next_selection_obj, n_next_selection, gene_stat_prior){
+    if (n_next_selection != 0){
+        n_preselected = dim(gene_stat_prior)[1]
+        genes_vec_prior_selection = gene_stat_prior %>% pull(gene)
+        n_genes = n_preselected + n_next_selection
+        sce_f = gbr_retain_informative_genes_preselected(next_selection_obj,
+                                                        n=NULL,
+                                                        preselected_genes=genes_vec_prior_selection)
+        genes_stat_next_selection = gbr_genes_stat_preselected(sce_f,
+                                                               genes_vec_prior_selection,
+                                                               n_genes=n_genes,
+                                                               batch=NULL)
+    } else {
+        genes_stat_next_selection = gene_stat_prior
+    }
+    genes_stat_next_selection
+}
+
+
