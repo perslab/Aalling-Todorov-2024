@@ -224,3 +224,18 @@ plot_cell_preservation_score = function(sce, lib_stat, n_genes_total, column){
       ylim(0,1)
     p
 }
+
+
+rerank_genes_stat = function(genes_stat, lib_stat){
+    reranked_genes_stat = lib_stat$gene_score_stat %>% 
+        filter(gene %in% genes_stat$gene) %>%
+        group_by(gene) %>%
+        summarise(mean_gene_score = mean(gene_score)) %>% 
+        arrange(desc(mean_gene_score)) %>%
+        ungroup %>%
+        full_join(genes_stat) %>%
+        mutate(rerank = seq(1, dim(.)[1])) %>%
+        dplyr::rename(rank = rerank, rank_orig = rank) %>%
+        relocate(rank, .before=gene)
+    reranked_genes_stat
+}
