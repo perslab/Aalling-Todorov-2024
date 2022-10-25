@@ -209,3 +209,18 @@ plot_ctm = function(ctm, name='', col_order=NULL){
 }
 
 
+plot_cell_preservation_score = function(sce, lib_stat, n_genes_total, column){
+    meta = colData(sce) %>% data.frame %>% select(labels, polar_label, cell_class)
+    cell_score_stat = lib_stat$cell_score_stat[lib_stat$cell_score_stat$n_genes == n_genes_total , ]
+    rownames(cell_score_stat) = cell_score_stat$cell
+    cell_score_stat = left_join(rownames_to_column(cell_score_stat), rownames_to_column(meta)) %>% column_to_rownames
+    column = ensym(column)
+    p = ggplot(cell_score_stat , aes(x = !!column, y = cell_score, fill = !!column)) + 
+      geom_boxplot() + 
+      theme_classic() + 
+      labs(y = "Cell neighborhood preservation score" , x = "# genes") + 
+      theme(legend.position = "none") + 
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+      ylim(0,1)
+    p
+}
