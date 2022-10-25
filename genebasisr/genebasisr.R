@@ -32,6 +32,14 @@ gbr_retain_informative_genes_preselected = function(sce, n=NULL, preselected_gen
 }
 
 
+gbr_genes_stat = function(sce, n_genes, batch=NULL){
+    genes_stat = geneBasisR::gene_search(sce,
+                             n_genes_total = n_genes,
+                             verbose = T)
+    genes_stat
+}
+
+
     genes_stat = geneBasisR::gene_search(sce,
                              n_genes_total = n_genes,
                              verbose = T)
