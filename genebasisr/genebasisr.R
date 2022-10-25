@@ -133,3 +133,12 @@ do_next_sw_selection = function(next_selection_obj, n_next_selection, gene_stat_
 }
 
 
+make_ctm_sw_selection = function(sce, celltype_id, gene_stat_prior, batch=NULL){
+    genes_vec_prior_selection = gene_stat_prior %>% pull(gene)
+    sce_f = gbr_retain_informative_genes_preselected(sce,
+                                                     n=NULL,
+                                                     preselected_genes=genes_vec_prior_selection)
+    ctm = gbr_get_celltype_mapping(sce_f, gene_stat_prior, celltype_id, batch=batch)
+    ctm
+}
+
