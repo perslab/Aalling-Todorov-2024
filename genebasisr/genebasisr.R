@@ -177,3 +177,8 @@ summarise_cell_score_stat_sw_selection = function(cell_score_stat){
 }
 
 
+get_sce_genes = function(sce){
+    gene_names = rownames(logcounts(sce))
+    gene_names
+}
+
