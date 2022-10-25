@@ -188,6 +188,16 @@ do_neuron_cluster_surgery = function(neuron){
     only_named_genes
 }
 
+get_only_named_genes_vec = function(vec_of_genes){
+    not_a_rik = vec_of_genes %>% stringr::str_ends("Rik") %>% `!`
+    not_an_ensmusg = vec_of_genes %>% stringr::str_starts("ENSMUSG") %>% `!`
+    not_a_Gm = vec_of_genes %>% stringr::str_starts("Gm\\d") %>% `!`
+    not_4_or_more_digits = vec_of_genes %>% stringr::str_ends("\\d{4,}") %>% `!`
+    only_named_genes = (not_a_rik & not_an_ensmusg & not_a_Gm & not_4_or_more_digits) %>% which
+    vec_of_genes[only_named_genes]
+}
+
+
 make_new_seurat_ngo = function(exp){
     counts_exp = GetAssayData(exp, slot="counts", assay="RNA") 
     counts_exp = counts_exp[.get_only_named_genes(exp),]
