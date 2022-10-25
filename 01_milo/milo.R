@@ -373,3 +373,20 @@ get_nhood_markers = function(milo_obj, da_results, sample_col, gene_subset=NULL,
 }
 
 
+get_top_milo_degs = function(nhood_markers, subset_groups, n_degs=5, tag){
+    subset_groups = stringr::str_split(subset_groups, pattern=fixed('.')) %>% unlist
+    p_adj_1 = paste0("adj.P.Val_", subset_groups[1])
+    p_adj_2 = paste0("adj.P.Val_", subset_groups[2])
+    top_degs = nhood_markers %>% 
+        filter(((!!rlang::sym(p_adj_1)) < 0.05) & ((!!rlang::sym(p_adj_2)) < 0.05)) %>%
+        mutate(p_product = (!!rlang::sym(p_adj_1)) * (!!rlang::sym(p_adj_2))) %>%
+        arrange(p_product) %>%
+        head(n_degs) %>%
+        pull(GeneID) %>%
+        enframe %>%
+        rename(gene=value, rank=name) %>%
+        mutate(tag = tag)
+    top_degs
+}
+
+
