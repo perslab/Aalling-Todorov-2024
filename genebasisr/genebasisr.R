@@ -21,6 +21,17 @@ get_not_named_genes_vec = function(vec_of_genes){
 }
 
 
+gbr_retain_informative_genes_preselected = function(sce, n=NULL, preselected_genes=preselected_genes){
+    sce_genes_excluding_panel = rownames(logcounts(sce)) %>% setdiff(preselected_genes)
+    sce_excluding_panel = sce[sce_genes_excluding_panel,]
+    sce_excluding_panel = geneBasisR::retain_informative_genes(sce, n=n)
+    infomrative_genes_excluding_panel = rownames(logcounts(sce_excluding_panel))
+    selected_genes = union(preselected_genes, infomrative_genes_excluding_panel)
+    sce_filtered = sce[selected_genes,]
+    sce_filtered
+}
+
+
     genes_stat = geneBasisR::gene_search(sce,
                              n_genes_total = n_genes,
                              verbose = T)
