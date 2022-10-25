@@ -362,3 +362,14 @@ set_polarity_da_results_NhoodGroup = function(da_results){
 }
 
 
+get_nhood_markers = function(milo_obj, da_results, sample_col, gene_subset=NULL, subset_groups=NULL){
+    if (!is.null(subset_groups)){
+        subset_groups = stringr::str_split(subset_groups, pattern=fixed('.')) %>% unlist
+    }
+    nhood_markers <- miloR::findNhoodGroupMarkers(milo_obj, da_results, subset.row = gene_subset,
+                                                  aggregate.samples = TRUE, sample_col = sample_col,
+                                                  subset.groups=subset_groups)
+    nhood_markers
+}
+
+
