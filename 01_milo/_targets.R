@@ -133,6 +133,12 @@ list(
                               filter(str_detect(name, 'pldf')) %>% 
                               filter(str_detect(name, 'obob5v5')) %>% 
                               pull(name)))
-    )
+    ),
+    make_milo_ngo_markers,
+    tarchetypes::tar_combine(combined_tmd_ngo, 
+                             make_milo_ngo_markers %>% 
+                             tar_select_targets(contains("tmd_ngo"))),
+    tar_target(ngo_panel_5ea,
+               get_top_deg_panel(combined_tmd_ngo, n_genes=5))
 )
 
