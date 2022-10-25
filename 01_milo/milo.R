@@ -390,3 +390,12 @@ get_top_milo_degs = function(nhood_markers, subset_groups, n_degs=5, tag){
 }
 
 
+get_top_deg_panel = function(combined_tmd_ngo, n_genes){
+    panel = combined_tmd_ngo %>%
+        filter(rank <= n_genes) %>%
+        select(-c(tag, rank)) %>%
+        distinct %>%
+        pull(gene)
+    panel
+}
+
