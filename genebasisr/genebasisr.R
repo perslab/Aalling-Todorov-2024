@@ -142,3 +142,13 @@ make_ctm_sw_selection = function(sce, celltype_id, gene_stat_prior, batch=NULL){
     ctm
 }
 
+make_lib_stat_sw_selection = function(sce, gene_stat_prior, celltype_id, library.size_type = "single", step=10, batch=NULL){
+    genes_vec_prior_selection = gene_stat_prior %>% pull(gene)
+    sce_f = gbr_retain_informative_genes_preselected(sce,
+                                                     n=NULL,
+                                                     preselected_genes=genes_vec_prior_selection)
+    lib_stat = gbr_evaluate_lib(sce_f, gene_stat_prior, celltype_id, library.size_type=library.size_type, step=step, batch=batch)
+    lib_stat
+}
+
+
