@@ -1,3 +1,10 @@
+pyget = function(some_list, some_item, default_value){
+    some_list %>%
+    `[[`(some_item) %>%
+    ifelse(is.null(.), default_value, .)
+}
+
+
 prep_obj_for_milo = function(obj){
     obj@meta.data = obj@meta.data %>% mutate(batch = stringr::str_replace_all(batch, stringr::fixed(" "), '__'))
     obj@meta.data = obj@meta.data %>% mutate(labels = stringr::str_replace_all(labels, stringr::fixed("-"), '__'))
@@ -23,7 +30,7 @@ make_milo = function(sce){
 }
 
 
-.milo_buildGraph = function(milo_obj){
+.milo_buildGraph = function(milo_obj, ...){
     milo_obj <- miloR::buildGraph(milo_obj, k=40, d=30, reduced.dim = 'PCA')
     milo_obj
 }
@@ -61,9 +68,24 @@ make_design_df = function(milo_obj){
     design_df
 }
 
+make_design_df_bmp1 = function(milo_obj){
+    design_df <- data.frame(SingleCellExperiment::colData(milo_obj))[, c('hash.mcl.ID', 'group', "strain")]
+    #convert seq-pool to factor
+    #keep unique rows
+    design_df <- dplyr::distinct(design_df)
+    #change rownames
+    rownames(design_df) <- design_df$hash.mcl.ID
+    design_df
+}
+
 
 make_model_matrix = function(design_df){
     model <- model.matrix(~0 + group + batch, data=design_df)
+    model
+}
+
+make_model_matrix_bmp1 = function(design_df){
+    model <- model.matrix(~0 + group, data=design_df)
     model
 }
 
@@ -355,20 +377,38 @@ get_milo_ngo_genes_vec = function(milo_assay){
 }
 
 
-
 set_polarity_da_results_NhoodGroup = function(da_results){
     da_results$NhoodGroup = da_results$polarity
     da_results
 }
 
 
-get_nhood_markers = function(milo_obj, da_results, sample_col, gene_subset=NULL, subset_groups=NULL){
+get_nhood_markers = function(milo_obj, da_results, sample_col, 
+                             grouping_col="NhoodGroup",
+                             gene_subset=NULL,
+                             subset_groups=NULL,
+                             tag=''){
+    subset_nhoods = NULL
     if (!is.null(subset_groups)){
         subset_groups = stringr::str_split(subset_groups, pattern=fixed('.')) %>% unlist
+        if (length(subset_groups) > 1){
+            subset_nhoods = da_results$NhoodGroup %in% subset_groups
+        }
+    }
+    if (grouping_col != "NhoodGroup"){
+        da_results['NhoodGroup'] = da_results[grouping_col]
     }
     nhood_markers <- miloR::findNhoodGroupMarkers(milo_obj, da_results, subset.row = gene_subset,
-                                                  aggregate.samples = TRUE, sample_col = sample_col,
-                                                  subset.groups=subset_groups)
+                                                aggregate.samples = TRUE, sample_col = sample_col,
+                                                subset.groups=subset_groups,
+                                                subset.nhoods = subset_nhoods)
+    nhood_markers = nhood_markers %>% 
+        relocate(GeneID) %>%
+        remove_rownames
+    nhood_markers = nhood_markers %>% arrange(.[[3]])
+    if (length(tag) > 0){
+        nhood_markers$tag = tag
+    }
     nhood_markers
 }
 
@@ -399,3 +439,345 @@ get_top_deg_panel = function(combined_tmd_ngo, n_genes){
     panel
 }
 
+
+make_nh_restored_tibble = function(results_fgf1, results_bl6, comparison=""){
+    # find_restored_nh
+    results_fgf1 = results_fgf1 %>% select(labels, polarity, Nhood, SpatialFDR)
+    results_bl6 = results_bl6 %>% select(labels, polarity, Nhood, SpatialFDR)
+    avb = left_join(results_fgf1, results_bl6, by = c("labels", "Nhood"),
+                    suffix = c(".fgf1", ".BL6")) %>%
+    dplyr::select(order(colnames(.))) %>%
+    relocate(labels, Nhood) %>%
+    mutate(restored = case_when(((SpatialFDR.fgf1 < 0.1) & # treated - veh
+                                 (SpatialFDR.BL6 < 0.1) & # condition - obob
+                                 (polarity.fgf1 != 'none') &
+                                 (polarity.BL6 != 'none') &
+                                 (polarity.fgf1 != polarity.BL6)) ~ TRUE,
+                                TRUE ~ FALSE))
+    if (comparison != ""){
+        avb['comparison'] = comparison
+    }
+    avb
+}
+
+
+make_nh_restored_summary_tibble = function(avb, comparison=""){
+    nh_restored = avb %>%
+        filter(restored == TRUE) %>%
+        group_by(labels) %>%
+        summarise(n_restored = n()) %>% arrange(desc(n_restored))
+    nh_restored.pos = avb %>%
+        filter(restored == TRUE) %>%
+        group_by(labels) %>%
+        filter(polarity.fgf1 == 'pos') %>%
+        summarise(n_restored.pos = n())
+    nh_restored.neg = avb %>%
+        filter(restored == TRUE) %>%
+        group_by(labels) %>%
+        filter(polarity.fgf1 == 'neg') %>%
+        summarise(n_restored.neg = n())
+
+
+    total_summary = avb %>%
+        group_by(labels) %>%
+        summarise(n_total = n())
+
+    fgf1_summary = avb %>%
+        group_by(labels) %>%
+        filter(SpatialFDR.fgf1 < 0.1) %>%
+        summarise(n_fgf1 = n())
+    fgf1_summary.pos = avb %>%
+        group_by(labels) %>%
+        filter(SpatialFDR.fgf1 < 0.1) %>%
+        filter(polarity.fgf1 == 'pos') %>%
+        summarise(n_fgf1.pos = n())
+    fgf1_summary.neg = avb %>%
+        group_by(labels) %>%
+        filter(SpatialFDR.fgf1 < 0.1) %>%
+        filter(polarity.fgf1 == 'neg') %>%
+        summarise(n_fgf1.neg = n())
+
+    bl6_summary = avb %>%
+        group_by(labels) %>%
+        filter(SpatialFDR.BL6 < 0.1) %>%
+        summarise(n_BL6 = n())
+
+    total_summary = total_summary %>% 
+        full_join(fgf1_summary) %>%
+        full_join(fgf1_summary.pos) %>%
+        full_join(fgf1_summary.neg) %>%
+        mutate(prop_fgf1.pos = n_fgf1.pos/n_fgf1) %>%
+        full_join(bl6_summary) %>%
+        mutate(n_fgf1 = replace_na(n_fgf1, 0)) %>%
+        mutate(n_BL6 = replace_na(n_BL6, 0))
+
+    total_summary = left_join(total_summary, nh_restored) %>%
+        left_join(nh_restored.pos) %>%
+        left_join(nh_restored.neg) %>%
+        mutate(n_restored = replace_na(n_restored, 0)) %>%
+        mutate(n_restored.pos = replace_na(n_restored.pos, 0)) %>%
+        mutate(n_restored.neg = replace_na(n_restored.neg, 0)) %>%
+        mutate(prop_restored_BL6 = n_restored/n_BL6) %>%
+        mutate(prop_restored_FGF1 = n_restored/n_fgf1) %>%
+        arrange(desc(n_fgf1))
+
+    if (comparison != ""){
+        total_summary["comparison"] = comparison
+    }
+
+    total_summary
+
+}
+
+
+annotate_summary_groupings = function(da_results, restored_df){
+    da_results = left_join(da_results, restored_df, by =c("labels", "Nhood")) %>%
+        mutate(exact_grouping = case_when( (polarity.fgf1 == 'pos') & (polarity.BL6 == 'neg') ~ 'pos_restored',
+                                           (polarity.fgf1 == 'neg') & (polarity.BL6 == 'pos') ~ 'neg_restored',
+                                           (polarity.fgf1 == 'pos') & (polarity.BL6 == 'none') ~ 'pos_FGF1',
+                                           (polarity.fgf1 == 'neg') & (polarity.BL6 == 'none') ~ 'neg_FGF1',
+                                           (polarity.fgf1 == 'none') & (polarity.BL6 == 'none') ~ 'none',
+                                           (polarity.fgf1 == 'none') & (polarity.BL6 == 'pos') ~ 'pos_BL6',
+                                           (polarity.fgf1 == 'none') & (polarity.BL6 == 'neg') ~ 'neg_BL6',
+                                           (polarity.fgf1 == 'pos') & (polarity.BL6 == 'pos') ~ 'pos_away',
+                                           (polarity.fgf1 == 'neg') & (polarity.BL6 == 'neg') ~ 'neg_away'))%>%
+        mutate(restored_grouping = case_when(SpatialFDR.fgf1 < 0.1 ~ exact_grouping,
+                                             TRUE ~ 'none')) %>%
+        mutate(fgf1_grouping = polarity.fgf1) %>%
+        select(all_of(c(colnames(da_results), c("comparison", "restored", 'exact_grouping', 'restored_grouping', 'fgf1_grouping'))))
+    da_results
+}
+
+
+add_gsea_cols_to_deg_results = function(deg_results){
+    converted = gprofiler2::gconvert(query = deg_results$GeneID,
+                                     organism = "mmusculus",
+                                     target = "ENSG",
+                                     mthreshold = 1,
+                                     filter_na = FALSE) %>%
+                    mutate(ensmusg = target) %>%
+                    mutate(GeneID = input) %>%
+                    select(GeneID, ensmusg)
+    deg_results = deg_results %>%
+        left_join(converted) %>%
+        distinct(ensmusg, .keep_all=TRUE) %>%
+        mutate(gsea_sort_score = (-log10(.[[3]]))) %>%
+        mutate(gsea_sort_score = .[[2]] * gsea_sort_score) %>%
+        arrange(desc(gsea_sort_score))
+    deg_results
+}
+
+deg2vec = function(deg_results){
+    deg_gsea_vec = deg_results %>%
+        filter(str_detect(ensmusg, "ENSMUSG")) %>%
+        dplyr::select(ensmusg, gsea_sort_score) %>%
+        distinct(gsea_sort_score, .keep_all = TRUE) %>%
+        deframe
+    deg_gsea_vec
+}
+
+do_gseGO = function(deg_results){
+    deg_gsea_vec = deg2vec(deg_results)
+    gsego_result <- clusterProfiler::gseGO(geneList     = deg_gsea_vec,
+                                            OrgDb        = org.Mm.eg.db::org.Mm.eg.db,
+                                            ont          = "ALL",
+                                            keyType      = "ENSEMBL",
+                                            minGSSize    = 15,
+                                            maxGSSize    = 500,
+                                            pvalueCutoff = 0.05,
+                                            verbose      = FALSE)
+    gsego_result
+}
+
+run_all_fgsea = function(deg_results, padj_cutoff=0.10, tag=''){
+    deg_gsea_vec = deg2vec(deg_results)
+    all_gene_sets = msigdbr::msigdbr(species = "Mus musculus")
+    gset_desc = all_gene_sets %>%
+        dplyr::select(gs_cat, gs_subcat, gs_name, gs_description) %>%
+        mutate(pathway = gs_name) %>%
+        dplyr::select(-gs_name) %>%
+        distinct
+    test_list = all_gene_sets %>%
+        group_by(gs_subcat) %>%
+        group_split %>%
+        purrr::map(~split(x = .x$ensembl_gene, f = .x$gs_name))
+    fgseaResults = test_list %>%
+        purrr::map(~fgsea::fgsea(pathways = .x, 
+                                  stats    = deg_gsea_vec,
+                                  minSize  = 15,
+                                  maxSize  = 500))
+    merged_results = do.call("rbind", fgseaResults) %>%
+        left_join(gset_desc) %>%
+        relocate(gs_cat, gs_subcat, pathway, gs_description) %>%
+        filter(padj < padj_cutoff)
+    if (length(tag) > 0){
+        merged_results$tag = tag
+    }
+    merged_results
+}
+
+
+annotate_nhg = function(da_results_nhg){
+    nhg_annotation = da_results_nhg %>%
+        select(Nhood, restored_grouping) %>%
+        distinct %>%
+        mutate(Nhood = as.character(Nhood))
+    nhg_annotation
+}
+
+
+summarise_nhg_annotation = function(nhg_annotation){
+    grouping_summary = nhg_annotation %>% 
+        group_by(restored_grouping) %>% 
+        summarise(n = n()) %>%
+        ungroup() %>%
+        mutate(frac_nhoods = n/sum(n))
+    grouping_summary
+}
+
+
+nhg2cell = function(nhm, da_results_nhg) {
+    nhg_annotation = annotate_nhg(da_results_nhg)
+    grouping_summary = summarise_nhg_annotation(nhg_annotation)
+    nhg_tib = nhm %>% 
+        rownames_to_column %>% 
+        pivot_longer(cols = !contains("row")) %>%
+        dplyr::rename(Nhood = name) %>%
+        filter(value != 0) %>%
+        select(-value) %>%
+        left_join(nhg_annotation, by = "Nhood") %>%
+        left_join(grouping_summary, by="restored_grouping") %>%
+        select(-n) %>%
+        select(-Nhood) %>%
+        mutate(restored_grouping = as.factor(restored_grouping)) %>%
+        group_by(rowname, restored_grouping) %>%
+        mutate(group_weight = n() * (1-frac_nhoods)) %>%
+        ungroup() %>%
+        group_by(rowname) %>%
+        mutate(total_count = n()) %>%
+        ungroup() %>%
+        distinct %>%
+        mutate(weight = group_weight/total_count) %>%
+        arrange(desc(weight)) %>%
+        distinct(rowname, .keep_all = TRUE) %>%
+        select(-group_weight, -total_count, -weight, -frac_nhoods) %>%
+        mutate(fgf1_grouping = case_when((str_detect(restored_grouping, "pos") & 
+                                          !str_detect(restored_grouping, "BL6")) ~ "pos",
+                                         (str_detect(restored_grouping, "neg") & 
+                                          !str_detect(restored_grouping, "BL6")) ~ "neg",
+                                         TRUE ~ "none")
+              )
+    nhg_tib
+}
+
+
+get_seurat_nhg_markers = function(seurat_obj, nhgc, grouping_col, group_a, group_b='', tag=''){
+    nhgc['grouping'] = nhgc[grouping_col]
+    group_a = stringr::str_split(group_a, pattern=fixed('.')) %>% unlist
+    cells_a = nhgc %>%
+        filter(grouping %in% group_a) %>%
+        pull(rowname)
+    if (group_b == ''){
+        group_b = nhgc %>%
+            filter(!(grouping %in% group_a)) %>%
+            pull(grouping) %>%
+            as.character %>%
+            unique %>%
+            paste0(collapse='.')
+    }
+    group_b = stringr::str_split(group_b, pattern=fixed('.')) %>% unlist
+    cells_b = nhgc %>%
+        filter(grouping %in% group_b) %>%
+        pull(rowname)
+    markers = Seurat::FindMarkers(seurat_obj, ident.1=cells_a, ident.2=cells_b, slot="data", assay="SCT", verbose=TRUE,
+                                  min.cells.group = 10, 
+                                  min.cells.feature = 10,
+                                  min.pct = 0.01,
+                                  logfc.threshold = 0,
+                                  only.pos = FALSE) 
+    markers['tag'] = tag
+    markers
+}
+
+
+add_gsea_cols_to_seurat_marker_results = function(sm_results){
+    sm_results = sm_results %>% 
+        rownames_to_column(var = "GeneID")
+    converted = gprofiler2::gconvert(query = sm_results$GeneID,
+                                     organism = "mmusculus",
+                                     target = "ENSG",
+                                     mthreshold = 1,
+                                     filter_na = FALSE) %>%
+                    mutate(ensmusg = target) %>%
+                    mutate(GeneID = input) %>%
+                    select(GeneID, ensmusg)
+    sm_results = sm_results %>%
+        left_join(converted) %>%
+        distinct(ensmusg, .keep_all=TRUE) %>%
+        mutate(gsea_sort_score = -log10(p_val_adj) * avg_log2FC) %>%
+        arrange(desc(gsea_sort_score))
+    sm_results
+}
+
+
+rehydrate_deg_tag = function(df){
+    df %>%
+        rowwise %>%
+        mutate(tag_split = str_split(tag, '___')) %>%
+        mutate(cluster = tag_split[[1]]) %>%
+        mutate(data_day = case_when(str_detect(cluster, "Day5") ~ 'Day5',
+                                    str_detect(cluster, "Day14") ~ 'Day14',
+                                    TRUE ~ 'all')) %>%
+        mutate(cluster = str_replace(cluster, fixed('Day5.'), '')) %>%
+        mutate(cluster = str_replace(cluster, fixed('Day14.'), '')) %>%
+        mutate(comparison = tag_split[[2]]) %>%
+        mutate(grouping = tag_split[[3]]) %>%
+        select(-tag_split) %>%
+        mutate(comparison_split = str_split(comparison, '__v__')) %>%
+        mutate(fgf1_conditions = comparison_split[[1]]) %>%
+        mutate(bl6_conditions = comparison_split[[2]]) %>%
+        select(-comparison, -comparison_split) %>%
+        mutate(fgf1_split = str_split(fgf1_conditions, fixed('.'))) %>%
+        mutate(fgf1_day = fgf1_split[[1]]) %>%
+        mutate(fgf1_comparison = fgf1_split[[2]]) %>%
+        select(-fgf1_conditions, -fgf1_split) %>%
+        mutate(bl6_split = str_split(bl6_conditions, fixed('.'))) %>%
+        mutate(bl6_day = bl6_split[[1]]) %>%
+        mutate(bl6_comparison = bl6_split[[2]]) %>%
+        select(-bl6_conditions, -bl6_split) %>%
+        mutate(grouping_split = str_split(grouping, fixed("."))) %>%
+        mutate(grouping = grouping_split[[1]]) %>%
+        mutate(cell_comparison = grouping_split[[2]]) %>%
+        select(-grouping_split) %>%
+        mutate(cell_split = str_split(cell_comparison, '_vs_')) %>%
+        mutate(cells_a = cell_split[[1]]) %>%
+        mutate(cells_b = cell_split[[2]]) %>%
+        select(-cell_split, -cell_comparison) %>%
+        relocate(tag, data_day, cluster, fgf1_day, fgf1_comparison, bl6_day, bl6_comparison, grouping, cells_a, cells_b) %>%
+        ungroup
+}
+
+
+make_gost = function(degs){
+    degs = degs %>% filter(p_val_adj < 0.05)
+    gene_list_all = degs %>% pull(ensmusg)
+    gene_list_pos = degs %>% filter(avg_log2FC > 0) %>% pull(ensmusg)
+    gene_list_neg = degs %>% filter(avg_log2FC < 0) %>% arrange(gsea_sort_score) %>% pull(ensmusg)
+    gene_list = list(all = gene_list_all,
+                     up = gene_list_pos,
+                     down = gene_list_neg)
+    gost_results = gprofiler2::gost(query = gene_list,
+                                    organism = "mmusculus",
+                                    ordered_query = TRUE,
+                                    exclude_iea = FALSE, 
+                                    evcodes = TRUE)
+    gost_results$result = gost_results$result %>%
+    rowwise %>%
+    mutate(gene_ids = str_split(intersection, fixed(','))) %>%
+    mutate(gene_ids = {degs %>% 
+                       filter(ensmusg %in% gene_ids) %>% 
+                       pull(GeneID) %>% 
+                       paste0(collapse=',')}) %>%
+    ungroup
+    gost_results
+}
