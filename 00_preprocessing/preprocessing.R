@@ -1,8 +1,3 @@
-library(tidyverse)
-library(SingleCellExperiment)
-library(Seurat)
-library(scRNAseq)
-
 PROJECT_DIR = Sys.getenv('PROJECT_DIR')
 
 read_sc = function(path_to_rds){
@@ -116,6 +111,58 @@ sc_transform_fgf1 = function(fgf1){
     fgf1
 }
 
+
+sc_transform_fgf1_forb = function(fgf1){
+    fgf1@meta.data = fgf1@meta.data %>%
+        mutate(batch_forb = case_when(batch == 'Batch 4' ~ 'BMP1',
+                                      TRUE ~ 'FGF1'))
+    fgf1 <- Seurat::SCTransform(fgf1,
+                        assay='RNA',
+                        method="glmGamPoi",
+                        vst.flavor="v2",
+                        vars.to.regress="batch_forb",
+                        verbose=TRUE)
+    fgf1 = run_sct_chaser(fgf1, resolution=0.8)
+    fgf1
+}
+
+
+sc_transform_fgf1_nobatch = function(fgf1){
+    fgf1 <- Seurat::SCTransform(fgf1,
+                        assay='RNA',
+                        method="glmGamPoi",
+                        vst.flavor="v2",
+                        verbose=TRUE)
+    fgf1 = run_sct_chaser(fgf1, resolution=0.8)
+    fgf1
+}
+
+
+sc_transform_fgf1_bmp1_batchvar_all = function(fgf1){
+    fgf1 <- Seurat::SCTransform(fgf1,
+                        assay='RNA',
+                        method="glmGamPoi",
+                        batch_var='batch',
+                        verbose=TRUE)
+    fgf1 = run_sct_chaser(fgf1, resolution=0.8)
+    fgf1
+}
+
+
+sc_transform_fgf1_bmp1_batchvar_forb = function(fgf1){
+    fgf1@meta.data = fgf1@meta.data %>%
+        mutate(batch_forb = case_when(batch == 'Batch 4' ~ 'BMP1',
+                                      TRUE ~ 'FGF1'))
+    fgf1 <- Seurat::SCTransform(fgf1,
+                        assay='RNA',
+                        method="glmGamPoi",
+                        batch_var='batch_forb',
+                        verbose=TRUE)
+    fgf1 = run_sct_chaser(fgf1, resolution=0.8)
+    fgf1
+}
+
+
 downsample_seurat_obj = function(obj, size){
     obj <- obj[, sample(colnames(obj), size = size, replace=F)]
 }
@@ -160,6 +207,17 @@ subset_exp = function(exp, class="all"){
 subset_exp_by_strain = function(exp, strain_id){
     exp = subset(x = exp,
                  subset = strain == strain_id)
+    exp
+}
+
+subset_exp_by_time = function(exp, day="all"){
+    if (day == 'all') {
+        exp = exp
+    } else if (day=='Day5'){
+        exp = subset(x = exp, subset = time == 'Day5')
+    } else if (day=='Day14'){
+        exp = subset(x = exp, subset = time == 'Day14')
+    }
     exp
 }
 

@@ -13,7 +13,7 @@ mapCamp <- function(query, dims=40, class = "clust_all_neurons") {
   camp <- scRNAseq::CampbellBrainData()
 
   neurlabs <- 
-    read.table("campbell_meta.txt", header=T) %>% 
+    read.table(paste0(Sys.getenv('PROJECT_DIR'), "data/meta/campbell_meta.txt"), header=T) %>% 
     distinct(NeuronsOnlyClusters, .keep_all=T) %>% 
     filter(NeuronsOnlyClusters != "Non-neuronal") %>% 
     mutate(cluster_labs = stringr::str_split_fixed(NeuronsOnlyClusters, pattern = "[.]", n = 2)[,2] %>%  
@@ -26,7 +26,7 @@ mapCamp <- function(query, dims=40, class = "clust_all_neurons") {
     )
   
   glialabs <- 
-    read.table("campbell_meta.txt", header=T)  %>% 
+    read.table(paste0(Sys.getenv('PROJECT_DIR'), "data/meta/campbell_meta.txt"), header=T)  %>% 
     distinct(AllCellSubclusters, .keep_all=T) %>% 
     filter(NeuronsOnlyClusters == "Non-neuronal") %>% 
     mutate(cluster_labs = stringr::str_split_fixed(AllCellSubclusters, pattern = "[.]", n = 2)[,2] %>%  str_replace_all(pattern = "/", replacement = "_"),

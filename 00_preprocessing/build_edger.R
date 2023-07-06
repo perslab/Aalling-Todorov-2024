@@ -13,7 +13,6 @@
 #' 
 #' design = c(list(c("geno", "diet", "age")), list(c("geno", "time", "treatment")), list('treatment'), list('geno'), list(c("geno", "diet", "age"))),
 #' batch = c("seq_pool", "seq_pool", "hash_pool", "hash_pool", "seq_pool"),
-library(edgeR)
 .build_edger <-  function(obj, ncell, design, batch) {
   
   groupvars <- unlist(design)
