@@ -14,7 +14,7 @@ plan(callr)
 tar_option_set(
 #   packages = c("tibble"), # packages that your targets need to run
   format = "qs", # default storage format,
-  error = "continue",
+  error = "null",
   retrieval = "worker",
   storage = "worker"
   # Set other options as needed.
@@ -47,9 +47,11 @@ make_split_objs = tar_map(
              prep_obj(pldf_obob5v5) %>%
              make_new_seurat_ngo %>%
              sc_transform_fgf1),
-  tar_target(sce_ngo_pl_00, convert_obj_to_sce(obj_ngo_pl)),
+  tar_target(sce_ngo_pl_00, convert_obj_to_sce(obj_ngo_pl),
+             cue=tar_cue(file=FALSE)),
   tar_target(sce_ngo_pl_01,
-             gbr_retain_informative_genes(sce_ngo_pl_00)),
+             gbr_retain_informative_genes(sce_ngo_pl_00),
+             cue=tar_cue(file=FALSE)),
   tar_target(genes_stat_pl_100,
              gbr_genes_stat(sce_ngo_pl_01, 100)),
   tar_target(genes_50_vec,
@@ -106,8 +108,10 @@ big_targets_100g = tar_map(
   values = big_targets_100g_tibble,
   names = "names",
   tar_target(sce_ngo_00,
-             convert_obj_to_sce(exp_ngo_obj)),
-  tar_target(sce_ngo_01, gbr_retain_informative_genes(sce_ngo_00)),
+             convert_obj_to_sce(exp_ngo_obj),
+             cue=tar_cue(file=FALSE)),
+  tar_target(sce_ngo_01, gbr_retain_informative_genes(sce_ngo_00),
+             cue=tar_cue(file=FALSE)),
     tar_target(genes_stat_100,
                gbr_genes_stat(sce_ngo_01, 100)),
   tar_target(genes_100,
@@ -136,9 +140,11 @@ preselected_genes_targets = tar_map(
   values = preselected_genes_targets_tibble,
   names = "names",
   tar_target(sce_ngo_00,
-             convert_obj_to_sce(exp_ngo_obj)),
+             convert_obj_to_sce(exp_ngo_obj),
+             cue=tar_cue(file=FALSE)),
   tar_target(sce_ngo_01,
-             gbr_retain_informative_genes_preselected(sce_ngo_00, n=NULL, preselected_genes=ngo_panel_5ea)),
+             gbr_retain_informative_genes_preselected(sce_ngo_00, n=NULL, preselected_genes=ngo_panel_5ea),
+             cue=tar_cue(file=FALSE)),
     tar_target(genes_stat_100,
                gbr_genes_stat_preselected(sce_ngo_01, ngo_panel_5ea, n_genes=100, batch=NULL)),
   tar_target(genes_100,
