@@ -8,9 +8,9 @@ options(renv.config.autoloader.enabled = FALSE)
 # renv::load(Sys.getenv("PROJECT_DIR"))
 #
 # if on hogg, load default profile. otherwise, ygg
-if (Sys.info()['nodename'] == "cbmrcomp01fl"){
+if (grepl("cbmrcomp01fl", Sys.info()['nodename'], fixed=TRUE)){
     renv::activate(project = Sys.getenv("PROJECT_DIR"),
-                   profile = "default")
+                   profile = NULL)
 } else {
     renv::activate(project = Sys.getenv("PROJECT_DIR"),
                    profile = "ygg") # make a conda based on this one and work with it on ygg
