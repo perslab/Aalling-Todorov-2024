@@ -15,3 +15,12 @@
 *.qs
 *.out
 *999_*
+01_milo/outputs/
+01_milo/output/
+*.xlsx
+*.csv.gz
+*.tsv.gz
+*.mtx.gz
+*.log
+00_preprocessing/tar_visnetwork.ipynb
+tar_issue/_targets.R
