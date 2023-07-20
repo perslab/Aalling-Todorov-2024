@@ -781,3 +781,13 @@ make_gost = function(degs){
     ungroup
     gost_results
 }
+
+
+make_milo_index_tibble = function(milo_obj, label){
+    index_hash = milo_obj %>%
+        `@`('nhoodIndex') %>% unlist %>%
+        colnames(milo_obj)[.] 
+    nhood_ncells = milo_obj@nhoodCounts %>% as.matrix %>% rowSums    
+    index_tibble = tibble(labels=label, Nhood=1:length(index_hash), hash.mcl.ID=index_hash, n_cells = nhood_ncells)
+    index_tibble
+}

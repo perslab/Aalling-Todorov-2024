@@ -13,7 +13,7 @@ plan(callr)
 
 # Set target options:
 tar_option_set(
-  packages = c("tidyverse"), # packages that your targets need to run
+  packages = c("tidyverse", "ggplot2", "patchwork", "Seurat", "miloR"), # packages that your targets need to run
   format = "qs", # default storage format,
   error = "null",
   retrieval = "worker",
@@ -57,6 +57,9 @@ make_split_objs = tar_map(
              convert_obj_to_sce(obj) %>%
              make_milo,
              priority=1),
+  tar_target(milo_index_tibble, 
+             make_milo_index_tibble(milo, cluster),
+             priority=1),
   tar_target(design_df,
              make_design_df(milo),
              priority=1),
@@ -83,6 +86,11 @@ make_da_results = tar_map(
   tar_target(da_results_02,
              annotate_nhood_counts(da_results_01, nhm) %>%
              combine_splits(., nhm)),
+  tar_target(da_results_02_idx,
+             milo_index_obj %>%
+             select(-any_of('labels')) %>%
+             left_join(da_results_02, ., by='Nhood'),
+             packages=c("tidyverse", "ggplot2", "patchwork", "Seurat")),
   tar_target(nonzero_mean_df,
              make_logFC_df(da_results_02) %>%
              make_logFC_cells_df(nhm, .) %>%
@@ -113,7 +121,17 @@ stage_02 = tar_eval(
   values = combination_recipe,
   tar_combine(output_name,
               make_da_results %>% tar_select_targets(all_of(da_names)))
+#   tar_combine(output_name_idx,
+#               make_da_results %>% tar_select_targets(all_of(da_names_idx))) ### no idea why this doesn't work as a list of targets!
 )
+combination_recipe = qs::qread('combination_recipe.qs')
+stage_02b = tar_eval(
+  values = combination_recipe,
+  tar_combine(output_name_idx,
+              make_da_results %>% tar_select_targets(all_of(da_names_idx)))
+)
+
+stage_02 = list(stage_02, stage_02b)
 
 
 restored_recipe = qs::qread("restored_recipe.qs")
@@ -142,6 +160,11 @@ stage_04 = tar_map(
   names = da_results_nhg_output_suffix,
   tar_target(da_results_nhg, 
              annotate_summary_groupings(da_results_obj, restored_df_obj)),
+  tar_target(da_results_nhg_idx,
+             milo_index_tibble %>%
+             select(-any_of('labels')) %>%
+             left_join(da_results_nhg, ., by='Nhood'),
+             packages=c("tidyverse", "ggplot2", "patchwork", "Seurat")),
   tar_target(nhgc,
              nhg2cell(nhm_obj, da_results_nhg))
 )
@@ -212,6 +235,15 @@ stage_07 = list(
              rehydrate_deg_tag(combined_gost_seurat))
 )
 
+stage_xx_recipe = qs::qread('stage_xx_recipe.qs')
+stage_xx = tar_eval(
+  values = stage_xx_recipe,
+  tar_combine(output_name,
+              stage_04 %>% tar_select_targets(all_of(da_results_nhg_names)))
+)
+
+
+
 run_list = list(
   stage_01,
   stage_02,
@@ -219,7 +251,8 @@ run_list = list(
   stage_04,
   stage_05,
   stage_06,
-  stage_07
+  stage_07,
+    stage_xx
 )
 
 run_list
