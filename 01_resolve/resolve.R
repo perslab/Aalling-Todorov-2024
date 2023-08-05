@@ -20,7 +20,7 @@ sc_transform_resolve = function(xenium.obj, keep_cells){
 
 resolve_find_all_markers = function(xe_obj, idents='predicted.label'){
     Idents(xe_obj) = idents
-    all_markers = xe_obj %>% FindAllMarkers(assay='SCT', only.pos=TRUE)
+    all_markers = xe_obj %>% FindAllMarkers(assay='SCT')
     all_markers
 }
 
