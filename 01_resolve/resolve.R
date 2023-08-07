@@ -74,8 +74,10 @@ transfer_data_cca_00 = function(xe_obj, obj_fgf1, refdata_column){
                                 query = xe_obj,
                                 features = xenium_genes,
                                 normalization.method = "SCT",
-                                recompute.residuals = F)
-    predictions <- TransferData(anchorset = anch, refdata = refdata) %>% 
+                                reduction='cca',
+                                recompute.residuals = T,
+                                dims = 1:30)
+    predictions <- TransferData(anchorset = anch, refdata = refdata, weight.reduction='cca') %>% 
         dplyr::select(predicted.id, prediction.score.max)
     predictions[[refdata_column]] = predictions$predicted.id
     predictions[[paste0(refdata_column, '_prediction.score.max')]] = predictions$prediction.score.max
@@ -113,6 +115,93 @@ transfer_data_cca_00_polar_label = function(xe_obj, obj_fgf1, selected_label) {
         split_cell_labels(selected_label) %>%
         sc_transform_fgf1
       xe_obj = transfer_data_cca_00(xe_obj, obj_fgf1, "polar_label")
+      xe_obj
+    },
+    error = function(e) {
+      message("An error occurred: ", e$message)
+      return(NA)
+    }
+  )
+}
+
+
+transfer_data_cca_00_unimodal = function(xe_obj, obj_fgf1, refdata_column){
+    xenium_genes = get_xe_genes(xe_obj, obj_fgf1)
+    xenium_genes_all = get_xe_genes_all(xe_obj)
+    obj_fgf1 = obj_fgf1 %>% 
+        Seurat::RunUMAP(assay='SCT', slot='counts', features = xenium_genes, return.model = TRUE)
+        # RunCCA(object1 = ., object2 = xe_obj, features=xenium_genes, num.cc = 30)
+    refdata = obj_fgf1 %>% `[[` %>% pull(refdata_column)
+    anch <- FindTransferAnchors(reference = obj_fgf1,
+                                query = xe_obj,
+                                features = xenium_genes,
+                                normalization.method = "SCT",
+                                reduction='cca',
+                                recompute.residuals = T,
+                                dims=1:30)
+    # predictions <- TransferData(anchorset = anch, refdata = refdata, weight.reduction = "cca", dims=1:30) %>% 
+    #     dplyr::select(predicted.id, prediction.score.max)
+    predictions = MapQuery(anchorset = anch,
+                           reference = obj_fgf1,
+                           query = xe_obj,
+                           refdata = refdata,
+                           reduction.model = "umap")  %>% 
+                           `[[` %>%
+                  dplyr::select(predicted.id, predicted.id.score)
+    predictions[[refdata_column]] = predictions$predicted.id
+    predictions[[paste0(refdata_column, '_prediction.score.max')]] = predictions$predicted.id.score
+    predictions = predictions %>% select(-predicted.id, -predicted.id.score)
+    xe_obj <- AddMetaData(xe_obj, metadata = predictions)
+    Misc(object = xe_obj, slot = paste0("predictions_", refdata_column)) <- predictions
+    xe_obj
+}
+
+reclass_by_gene = function(xe_obj, gene, gene_thr, corrected_class){
+    meta = xe_obj %>% `[[`
+    meta = meta %>%
+        mutate(gene_count = xe_obj[["Xenium"]]@counts[gene, ]) %>%
+        mutate(cell_class = case_when(gene_count >= gene_thr ~ corrected_class,
+                                   TRUE ~ cell_class)) %>%
+        mutate(cell_class_prediction.score.max = case_when(gene_count >= gene_thr ~ 1,
+                                                           TRUE ~ cell_class_prediction.score.max)) %>%
+        select(-gene_count)
+    xe_obj@meta.data = meta
+    xe_obj
+}
+
+reclass_by_gene_hilo = function(xe_obj, gene, gene_thr_lo, gene_thr_hi, wrong_class, correct_class){
+    meta = xe_obj %>% `[[`
+    meta = meta %>%
+        mutate(gene_count = xe_obj[["Xenium"]]@counts[gene, ]) %>%
+        mutate(cell_class = case_when((gene_count >= gene_thr_hi &
+                                      gene_count >= gene_thr_lo &
+                                      cell_class == wrong_class) ~ correct_class,
+                                      (gene_count <= gene_thr_hi &
+                                      gene_count >= gene_thr_lo &
+                                      cell_class == wrong_class) ~ 'blah',
+                                      TRUE ~ cell_class)) %>%
+        mutate(cell_class_prediction.score.max = case_when((gene_count >= gene_thr_hi &
+                                                            gene_count >= gene_thr_lo &
+                                                            cell_class == wrong_class) ~ 1,
+                                                            (gene_count <= gene_thr_hi &
+                                                            gene_count >= gene_thr_lo &
+                                                            cell_class == wrong_class) ~ 1,
+                                                            TRUE ~ cell_class_prediction.score.max)) %>%
+        select(-gene_count)
+    xe_obj@meta.data = meta
+    xe_obj
+}
+
+transfer_data_cca_00_polar_label_unimodal = function(xe_obj, obj_fgf1, selected_label) {
+  tryCatch(
+    {
+      xe_obj = xe_obj %>%
+        split_cell_labels(selected_label) %>%
+        sc_transform_resolve
+      obj_fgf1 = obj_fgf1 %>%
+        split_cell_labels(selected_label) %>%
+        sc_transform_fgf1
+      xe_obj = transfer_data_cca_00_unimodal(xe_obj, obj_fgf1, "polar_label")
       xe_obj
     },
     error = function(e) {

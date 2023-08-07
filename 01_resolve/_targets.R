@@ -17,7 +17,8 @@ tar_option_set(
   format = "qs", # default storage format,
   error = "null",
   retrieval = "worker",
-  storage = "worker"
+  storage = "worker",
+    workspace_on_error = TRUE # Save a workspace file for a target that errors out.
   # Set other options as needed.
 )
 
@@ -84,145 +85,49 @@ stage_02 = list(
   )
 
   stage_03 = list(
-  tar_target(transfer_anchors_cca,
-             FindTransferAnchors(reference = obj_fgf1_sct_xeg, query = obj_merged_sct, features = xenium_genes,  
-                                 normalization.method = 'SCT',
-                                 reduction = 'cca',
-                                 query.assay = 'SCT',
-                                 reference.assay = 'SCT',
-                                 recompute.residuals = F,
-                                 verbose=TRUE)
-            ),
-  tar_target(xe_obj_cca_unimapped_00,
-             MapQuery(anchorset = transfer_anchors_cca, reference = obj_fgf1_sct_xeg, query = obj_merged_sct,
-                                 refdata = list(cell_class = "cell_class"), reduction.model = "umap")
-             ),
-  tar_target(xe_obj_cca_unimapped,
-             xe_obj_cca_unimapped_00 %>%
-             subset_xe_obj_cell_class(cell_class_score_thr=0.90) %>% 
-             sc_transform_resolve %>% 
-             Seurat::RunUMAP(assay='SCT', slot='counts', features = xenium_genes, return.model = TRUE)
-            ),
-  tar_target(xe_neuron_cells,
-             xe_obj_cca_unimapped %>% 
-             `[[` %>% 
-             filter(predicted.cell_class == 'neuron') %>%
-             rownames
-            ),
-  tar_target(xe_other_cells,
-             xe_obj_cca_unimapped %>% 
-             `[[` %>% 
-             filter(predicted.cell_class != 'neuron') %>%
-             rownames
-            ),
-  tar_target(xe_neurons_obj,
-             xe_obj_cca_unimapped %>%
-             subset(cells = xe_neuron_cells) %>%
-             Seurat::SCTransform(assay='Xenium',
-                                 method="glmGamPoi",
-                                 vst.flavor="v2",
-                                 verbose=TRUE) %>%
-             Seurat::RunUMAP(assay='SCT', slot='counts', features = xenium_genes, return.model = TRUE)
-            ),
-  tar_target(xe_other_obj,
-             xe_obj_cca_unimapped %>%
-             subset(cells = xe_other_cells) %>%
-             Seurat::SCTransform(assay='Xenium',
-                                 method="glmGamPoi",
-                                 vst.flavor="v2",
-                                 verbose=TRUE) %>%
-             Seurat::RunUMAP(assay='SCT', slot='counts', features = xenium_genes, return.model = TRUE)
-            ),
-  tar_target(obob_d5_neurons_path,
-             '../genebasisr_obob5v5/_targets/objects/exp_neuron_obob5v5',
-             format='file'
-             ),
-  tar_target(obob_d5_neurons_obj,
-             qs::qread(obob_d5_neurons_path)
-            ),
-  tar_target(obj_fgf1_neurons_sct_xeg,
-             obob_d5_neurons_obj %>% 
-             Seurat::RunUMAP(assay='SCT', slot='counts', features = xenium_genes, return.model = TRUE)
-             ),
-  tar_target(transfer_anchors_cca_neurons,
-             FindTransferAnchors(reference = obj_fgf1_neurons_sct_xeg, query = xe_neurons_obj, features = xenium_genes,  
-                                 normalization.method = 'SCT',
-                                 reduction = 'cca',
-                                 query.assay = 'SCT',
-                                 reference.assay = 'SCT',
-                                 recompute.residuals = F,
-                                 verbose=TRUE)
-            ),
-  tar_target(xe_obj_neurons_cca_unimapped,
-             MapQuery(anchorset = transfer_anchors_cca_neurons, reference = obj_fgf1_neurons_sct_xeg, query = xe_neurons_obj,
-                                 refdata = list(polar_label = "polar_label"), reduction.model = "umap")
-             ),
-  tar_target(obob_d5_other_path,
-             '../genebasisr_obob5v5/_targets/objects/exp_other_obob5v5',
-             format='file'
-             ),
-  tar_target(obob_d5_other_obj,
-             qs::qread(obob_d5_other_path)
-            ),
-  tar_target(obj_fgf1_other_sct_xeg,
-             obob_d5_other_obj %>% 
-             Seurat::RunUMAP(assay='SCT', slot='counts', features = xenium_genes, return.model = TRUE)
-             ),
-  tar_target(transfer_anchors_cca_other,
-             FindTransferAnchors(reference = obj_fgf1_other_sct_xeg, query = xe_other_obj, features = xenium_genes,  
-                                 normalization.method = 'SCT',
-                                 reduction = 'cca',
-                                 query.assay = 'SCT',
-                                 reference.assay = 'SCT',
-                                 recompute.residuals = F,
-                                 verbose=TRUE)
-            ),
-  tar_target(xe_obj_other_cca_unimapped,
-             MapQuery(anchorset = transfer_anchors_cca_other, reference = obj_fgf1_other_sct_xeg, query = xe_other_obj,
-                                 refdata = list(polar_label = "polar_label"), reduction.model = "umap")
-             ),
-  tar_target(meta_other,
-             xe_obj_other_cca_unimapped %>% 
-             `[[` %>%
-             select(predicted.cell_class.score, predicted.cell_class, 
-                    predicted.polar_label.score, predicted.polar_label) %>%
-             rename_with(~paste0(., "_2s"), everything())
-             ),
-  tar_target(meta_neurons,
-             xe_obj_neurons_cca_unimapped %>% 
-             `[[` %>%
-             select(predicted.cell_class.score, predicted.cell_class, 
-                    predicted.polar_label.score, predicted.polar_label) %>%
-             rename_with(~paste0(., "_2s"), everything())
-             ),
-  tar_target(meta_new,
-             rbind(meta_other, meta_neurons) %>%
-             mutate(predicted.label = str_replace(predicted.polar_label_2s, '.neg|.none|.pos', ''))
-             ),
-  tar_target(xe_obj_cca_unimapped_2s,
-             xe_obj_cca_unimapped %>% AddMetaData(metadata = meta_new)),
-  tar_target(all_markers_xe_cca_unimapped_2s,
-             xe_obj_cca_unimapped_2s %>%
-             resolve_find_all_markers(idents='predicted.label'))
+      tar_target(obob_d5_neurons_path,
+                '../genebasisr_obob5v5/_targets/objects/exp_neuron_obob5v5',
+                format='file'
+                ),
+      tar_target(obob_d5_neurons_obj,
+                qs::qread(obob_d5_neurons_path)
+                ),
+      tar_target(obj_fgf1_neurons_sct_xeg,
+                obob_d5_neurons_obj %>% 
+                Seurat::RunUMAP(assay='SCT', slot='counts', features = xenium_genes, return.model = TRUE)
+                ),
+      tar_target(obob_d5_other_path,
+                '../genebasisr_obob5v5/_targets/objects/exp_other_obob5v5',
+                format='file'
+                ),
+      tar_target(obob_d5_other_obj,
+                qs::qread(obob_d5_other_path)
+                ),
+      tar_target(obj_fgf1_other_sct_xeg,
+                obob_d5_other_obj %>% 
+                Seurat::RunUMAP(assay='SCT', slot='counts', features = xenium_genes, return.model = TRUE)
+                )
 )
 
 stage_04 = list(
     tar_target(xe_obj_cca_td_class,
-               transfer_data_cca_00(obj_merged_sct, obj_fgf1, 'cell_class')
+               transfer_data_cca_00(obj_merged_sct, obj_fgf1, 'cell_class') %>%
+              #  reclass_by_gene('Agrp', 1, 'neuron') %>%
+              #  reclass_by_gene('Pomc', 1, 'neuron')
+              reclass_by_gene_hilo('Agrp', 1, 5, 'other', 'neuron') %>%
+              reclass_by_gene_hilo('Pomc', 1, 5, 'other', 'neuron')
             ),
     tar_target(xe_obj_cca_td_neuron,
                xe_obj_cca_td_class %>% split_cell_class('neuron') %>% sc_transform_resolve
                ),
     tar_target(xe_obj_cca_td_neuron_labels,
-               transfer_data_cca_00(xe_obj_cca_td_neuron, obj_fgf1_neurons_sct_xeg, "labels") %>%
-               Seurat::RunUMAP(assay='SCT', slot='counts', features = xenium_genes_all, return.model = TRUE)
+               transfer_data_cca_00(xe_obj_cca_td_neuron, obj_fgf1_neurons_sct_xeg, "labels")
                ),
     tar_target(xe_obj_cca_td_other,
                xe_obj_cca_td_class %>% split_cell_class('other') %>% sc_transform_resolve
                ),
     tar_target(xe_obj_cca_td_other_labels,
-               transfer_data_cca_00(xe_obj_cca_td_other, obj_fgf1_other_sct_xeg, 'labels') %>%
-               Seurat::RunUMAP(assay='SCT', slot='counts', features = xenium_genes_all, return.model = TRUE)
+               transfer_data_cca_00(xe_obj_cca_td_other, obj_fgf1_other_sct_xeg, 'labels')
                )
 )
 
@@ -237,7 +142,7 @@ stage_05_neuron = list(
   tar_target(xe_obj_cca_td_neuron_labels_polar_label_markers,
              transfer_data_cca_00_polar_label(xe_obj_cca_td_neuron_labels, obj_fgf1_neurons_sct_xeg, neuron_labels) %>%
              resolve_find_all_markers(idents='polar_label'),
-             pattern = map(other_labels)
+             pattern = map(neuron_labels)
              )
 )
 stage_05_other = list(
@@ -272,10 +177,100 @@ stage_05_both = list(
                       other_polar_label_markers)
              ),           
   tar_target(xe_obj_cca_td_3s,
-             xe_obj_cca_td_class %>% AddMetaData(metadata = polar_label_meta)
+             merge(xe_obj_cca_td_neuron_labels, xe_obj_cca_td_other_labels) %>%
+             AddMetaData(metadata = polar_label_meta[c('polar_label', 'polar_label_prediction.score.max')]) %>%
+             sc_transform_resolve %>%
+             Seurat::RunUMAP(assay='SCT', slot='counts', features = xenium_genes_all, return.model = TRUE)
              )
 )
 stage_05 = list(stage_05_neuron, stage_05_other, stage_05_both)
+
+
+####
+stage_04_uni = list(
+    tar_target(xe_obj_cca_td_class_uni,
+               transfer_data_cca_00_unimodal(obj_merged_sct, obj_fgf1, 'cell_class') %>%
+              #  reclass_by_gene('Agrp', 1, 'neuron') %>%
+              #  reclass_by_gene('Pomc', 1, 'neuron')
+              reclass_by_gene_hilo('Agrp', 1, 5, 'other', 'neuron') %>%
+              reclass_by_gene_hilo('Pomc', 1, 5, 'other', 'neuron')
+            ),
+    tar_target(xe_obj_cca_td_neuron_uni,
+               xe_obj_cca_td_class_uni %>% split_cell_class('neuron') %>% sc_transform_resolve
+               ),
+    tar_target(xe_obj_cca_td_neuron_labels_uni,
+               transfer_data_cca_00_unimodal(xe_obj_cca_td_neuron_uni, obj_fgf1_neurons_sct_xeg, "labels")
+               ),
+    tar_target(xe_obj_cca_td_other_uni,
+               xe_obj_cca_td_class_uni %>% split_cell_class('other') %>% sc_transform_resolve
+               ),
+    tar_target(xe_obj_cca_td_other_labels_uni,
+               transfer_data_cca_00_unimodal(xe_obj_cca_td_other_uni, obj_fgf1_other_sct_xeg, 'labels')
+               )
+)
+
+stage_05_neuron_uni = list(
+  tar_target(neuron_labels_uni,
+             obj_fgf1_neurons_sct_xeg %>% `[[` %>% distinct(labels) %>% pull(labels)),
+  tar_target(xe_obj_cca_td_neuron_labels_polar_label_metadata_uni,
+             transfer_data_cca_00_polar_label_unimodal(xe_obj_cca_td_neuron_labels_uni, obj_fgf1_neurons_sct_xeg, neuron_labels_uni) %>%
+             `[[`,
+             pattern = map(neuron_labels_uni)
+             ),
+  tar_target(xe_obj_cca_td_neuron_labels_polar_label_markers_uni,
+             transfer_data_cca_00_polar_label_unimodal(xe_obj_cca_td_neuron_labels_uni, obj_fgf1_neurons_sct_xeg, neuron_labels_uni) %>%
+             resolve_find_all_markers(idents='polar_label'),
+             pattern = map(neuron_labels_uni)
+             )
+)
+stage_05_other_uni = list(
+  tar_target(other_labels_uni,
+             obj_fgf1_other_sct_xeg %>% `[[` %>% distinct(labels) %>% pull(labels)),
+  tar_target(xe_obj_cca_td_other_labels_polar_label_metadata_uni,
+             transfer_data_cca_00_polar_label_unimodal(xe_obj_cca_td_other_labels_uni, obj_fgf1_other_sct_xeg, other_labels_uni) %>%
+             `[[`,
+             pattern = map(other_labels_uni)
+             ),
+  tar_target(xe_obj_cca_td_other_labels_polar_label_markers_uni,
+             transfer_data_cca_00_polar_label_unimodal(xe_obj_cca_td_other_labels_uni, obj_fgf1_other_sct_xeg, other_labels_uni) %>%
+             resolve_find_all_markers(idents='polar_label'),
+             pattern = map(other_labels_uni)
+             )
+)
+stage_05_both_uni = list(
+  tar_combine(neuron_polar_label_metadata_uni,
+              stage_05_neuron_uni %>% tar_select_targets(starts_with("xe_obj_cca_td_neuron_labels_polar_label_metadata_uni"))),
+  tar_combine(neuron_polar_label_markers_uni,
+              stage_05_neuron_uni %>% tar_select_targets(starts_with("xe_obj_cca_td_neuron_labels_polar_label_markers_uni"))),
+  tar_combine(other_polar_label_metadata_uni,
+              stage_05_other_uni %>% tar_select_targets(starts_with("xe_obj_cca_td_other_labels_polar_label_metadata_uni"))),
+  tar_combine(other_polar_label_markers_uni,
+              stage_05_other_uni %>% tar_select_targets(starts_with("xe_obj_cca_td_other_labels_polar_label_markers_uni"))),            
+  tar_target(polar_label_meta_uni,
+             bind_rows(neuron_polar_label_metadata_uni,
+                       other_polar_label_metadata_uni)
+             ),
+  tar_target(polar_label_markers_uni,
+            bind_rows(neuron_polar_label_markers_uni,
+                      other_polar_label_markers_uni)
+             ),           
+  tar_target(xe_obj_cca_td_3s_uni,
+             merge(xe_obj_cca_td_neuron_labels_uni, xe_obj_cca_td_other_labels_uni) %>%
+             AddMetaData(metadata = polar_label_meta_uni[c('polar_label', 'polar_label_prediction.score.max')]) %>%
+             sc_transform_resolve %>%
+             Seurat::RunUMAP(assay='SCT',
+                           slot='counts',
+                           features = .@assays$SCT@meta.features %>% 
+                                      rownames_to_column(var = 'genes') %>% 
+                                      filter(genes != 'Lmx1a') %>% 
+                                      pull(genes),
+                           return.model = TRUE)
+             )
+)
+stage_05_uni = list(stage_05_neuron_uni, stage_05_other_uni, stage_05_both_uni)
+
+
+
 
 
 run_list = list(
@@ -283,7 +278,9 @@ run_list = list(
   stage_02,
   stage_03,
   stage_04,
-  stage_05 
+  stage_05,
+  stage_04_uni,
+  stage_05_uni
 )
 
 run_list
