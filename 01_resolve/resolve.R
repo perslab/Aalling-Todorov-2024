@@ -60,7 +60,7 @@ get_xe_genes = function(xe_obj, obj_fgf1){
                 rownames %>%
                 intersect(ref_genes_all) %>%
                 tibble %>%
-                filter(. != 'Agrp') %>% #this is not common between both datasets
+                # filter(. != 'Agrp') %>% #this is not common between both datasets
                 pull
         xenium_genes
 }
@@ -70,13 +70,20 @@ transfer_data_cca_00 = function(xe_obj, obj_fgf1, refdata_column){
     xenium_genes_all = get_xe_genes_all(xe_obj)
     obj_fgf1 = obj_fgf1 %>% Seurat::RunUMAP(assay='SCT', slot='counts', features = xenium_genes, return.model = TRUE)
     refdata = obj_fgf1 %>% `[[` %>% pull(refdata_column)
-    anch <- FindTransferAnchors(reference = obj_fgf1,
-                                query = xe_obj,
-                                features = xenium_genes,
-                                normalization.method = "SCT",
-                                reduction='cca',
-                                recompute.residuals = T,
-                                dims = 1:30)
+    # anch <- FindTransferAnchors(reference = obj_fgf1,
+    #                             query = xe_obj,
+    #                             features = xenium_genes,
+    #                             normalization.method = "SCT",
+    #                             reduction='cca',
+    #                             recompute.residuals = T,
+    #                             dims = 1:20)
+    anch = FindTransferAnchors(reference = obj_fgf1, query = xe_obj, features = xenium_genes,  
+                               normalization.method = 'SCT',
+                               reduction = 'cca',
+                               query.assay = 'SCT',
+                               reference.assay = 'SCT',
+                               recompute.residuals = F,
+                               verbose=TRUE)
     predictions <- TransferData(anchorset = anch, refdata = refdata, weight.reduction='cca') %>% 
         dplyr::select(predicted.id, prediction.score.max)
     predictions[[refdata_column]] = predictions$predicted.id
@@ -132,13 +139,20 @@ transfer_data_cca_00_unimodal = function(xe_obj, obj_fgf1, refdata_column){
         Seurat::RunUMAP(assay='SCT', slot='counts', features = xenium_genes, return.model = TRUE)
         # RunCCA(object1 = ., object2 = xe_obj, features=xenium_genes, num.cc = 30)
     refdata = obj_fgf1 %>% `[[` %>% pull(refdata_column)
-    anch <- FindTransferAnchors(reference = obj_fgf1,
-                                query = xe_obj,
-                                features = xenium_genes,
-                                normalization.method = "SCT",
-                                reduction='cca',
-                                recompute.residuals = T,
-                                dims=1:30)
+    # anch <- FindTransferAnchors(reference = obj_fgf1,
+    #                             query = xe_obj,
+    #                             features = xenium_genes,
+    #                             normalization.method = "SCT",
+    #                             reduction='cca',
+    #                             recompute.residuals = T,
+    #                             dims=1:20)
+    anch = FindTransferAnchors(reference = obj_fgf1, query = xe_obj, features = xenium_genes,  
+                               normalization.method = 'SCT',
+                               reduction = 'cca',
+                               query.assay = 'SCT',
+                               reference.assay = 'SCT',
+                               recompute.residuals = F,
+                               verbose=TRUE)
     # predictions <- TransferData(anchorset = anch, refdata = refdata, weight.reduction = "cca", dims=1:30) %>% 
     #     dplyr::select(predicted.id, prediction.score.max)
     predictions = MapQuery(anchorset = anch,
@@ -190,6 +204,58 @@ reclass_by_gene_hilo = function(xe_obj, gene, gene_thr_lo, gene_thr_hi, wrong_cl
         select(-gene_count)
     xe_obj@meta.data = meta
     xe_obj
+}
+
+relabel_by_gene_hilo = function(xe_obj, gene, gene_thr_lo, gene_thr_hi, correct_label){
+    meta = xe_obj %>% `[[`
+    meta = meta %>%
+        mutate(gene_count = xe_obj[["Xenium"]]@counts[gene, ]) %>%
+        mutate(labels = case_when((gene_count >= gene_thr_hi &
+                                      gene_count >= gene_thr_lo &
+                                      !str_detect(labels, gene)) ~ correct_label,
+                                      (gene_count <= gene_thr_hi &
+                                      gene_count >= gene_thr_lo &
+                                      !str_detect(labels, gene)) ~ 'blah',
+                                      TRUE ~ labels)) %>%
+        mutate(labels_prediction.score.max = case_when((gene_count >= gene_thr_hi &
+                                                            gene_count >= gene_thr_lo &
+                                                            !str_detect(labels, gene)) ~ 1,
+                                                            (gene_count <= gene_thr_hi &
+                                                            gene_count >= gene_thr_lo &
+                                                            !str_detect(labels, gene)) ~ 1,
+                                                            TRUE ~ labels_prediction.score.max)) %>%
+        select(-gene_count)
+    xe_obj@meta.data = meta
+    xe_obj
+}
+
+labels_from_polar_label = function(xe_obj){
+  meta = xe_obj %>% `[[` %>%
+    mutate(labels = polar_label %>% 
+                    str_replace(fixed('.neg'), '') %>% 
+                    str_replace(fixed('.none'), '') %>% 
+                    str_replace(fixed('.pos'), '')) %>%
+    mutate(labels_prediction.score.max = 2)
+  xe_obj@meta.data = meta
+  xe_obj
+}
+
+drop_blah_class = function(xe_obj){
+  meta = xe_obj %>% `[[`
+  good_cells = meta %>%
+    filter(cell_class != 'blah') %>%
+    rownames
+  xe_obj = xe_obj %>% subset(cells = good_cells)
+  xe_obj
+}
+
+drop_blah_labels = function(xe_obj){
+  meta = xe_obj %>% `[[`
+  good_cells = meta %>%
+    filter(labels != 'blah') %>%
+    rownames
+  xe_obj = xe_obj %>% subset(cells = good_cells)
+  xe_obj
 }
 
 transfer_data_cca_00_polar_label_unimodal = function(xe_obj, obj_fgf1, selected_label) {
