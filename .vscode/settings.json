@@ -1,0 +1,13 @@
+{
+    "r.interpreterPath": "/tools/anaconda/envs/nmq407/fgf1/bin/R",
+    "r.rpath.linux": "/tools/anaconda/envs/nmq407/fgf1/bin/R",
+    "r.rterm.linux": "/tools/anaconda/envs/nmq407/fgf1/bin/R",
+    "terminal.integrated.defaultLocation": "editor",
+    "r.liveShare.defaults.shareBrowser": false,
+    "r.rmarkdown.enableCodeLens": false,
+    "cmake.environment": {
+        "PROJECT_DIR": "/projects/petar/fgf1/"
+    },
+    "python.terminal.activateEnvironment": "false",
+    "r.lsp.promptToInstall": false,
+}

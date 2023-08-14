@@ -6,7 +6,6 @@
 **.ipynb_checkpoints/
 **renv/
 *.basilisk
-*.ipynb
 *.code-workspace
 *.rds
 *.pyc
