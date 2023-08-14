@@ -114,7 +114,7 @@ stage_04 = list(
                transfer_data_cca_00(obj_merged_sct, obj_fgf1, 'cell_class') %>%
               #  reclass_by_gene('Agrp', 1, 'neuron') %>%
               #  reclass_by_gene('Pomc', 1, 'neuron')
-              reclass_by_gene_hilo('Agrp', 1, 5, 'other', 'neuron') %>%
+              reclass_by_gene_hilo('Agrp', 1, 10, 'other', 'neuron') %>%
               reclass_by_gene_hilo('Pomc', 1, 10, 'other', 'neuron')
             ),
     tar_target(xe_obj_cca_td_neuron,
@@ -132,7 +132,7 @@ stage_04 = list(
         ),
     tar_target(xe_obj_cca_td_neuron_labels,
                transfer_data_cca_00(xe_obj_cca_td_neuron, obj_fgf1_neurons_sct_xeg, "labels") %>%
-               relabel_by_gene_hilo('Agrp', 1, 5, 'Agrp')
+               relabel_by_gene_hilo('Agrp', 1, 10, 'Agrp')
                ),
     tar_target(xe_obj_cca_td_other,
                xe_obj_cca_td_class %>% split_cell_class('other') %>% sc_transform_resolve
@@ -239,7 +239,7 @@ stage_04_uni = list(
                transfer_data_cca_00_unimodal(obj_merged_sct, obj_fgf1, 'cell_class') %>%
               #  reclass_by_gene('Agrp', 1, 'neuron') %>%
               #  reclass_by_gene('Pomc', 1, 'neuron')
-              reclass_by_gene_hilo('Agrp', 1, 5, 'other', 'neuron') %>%
+              reclass_by_gene_hilo('Agrp', 1, 10, 'other', 'neuron') %>%
               reclass_by_gene_hilo('Pomc', 1, 10, 'other', 'neuron')
             ),
      tar_target(xe_obj_cca_td_neuron_2s_uni,
@@ -257,7 +257,7 @@ stage_04_uni = list(
                ),
     tar_target(xe_obj_cca_td_neuron_labels_uni,
                transfer_data_cca_00_unimodal(xe_obj_cca_td_neuron_uni, obj_fgf1_neurons_sct_xeg, "labels") %>%
-               relabel_by_gene_hilo('Agrp', 1, 5, 'Agrp')
+               relabel_by_gene_hilo('Agrp', 1, 10, 'Agrp')
                ),
     tar_target(xe_obj_cca_td_other_uni,
                xe_obj_cca_td_class_uni %>% split_cell_class('other') %>% sc_transform_resolve
