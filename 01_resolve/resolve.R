@@ -155,11 +155,12 @@ transfer_data_cca_00_unimodal = function(xe_obj, obj_fgf1, refdata_column){
                                verbose=TRUE)
     # predictions <- TransferData(anchorset = anch, refdata = refdata, weight.reduction = "cca", dims=1:30) %>% 
     #     dplyr::select(predicted.id, prediction.score.max)
-    predictions = MapQuery(anchorset = anch,
+    xe_obj = MapQuery(anchorset = anch,
                            reference = obj_fgf1,
                            query = xe_obj,
                            refdata = refdata,
-                           reduction.model = "umap")  %>% 
+                           reduction.model = "umap")
+    predictions = xe_obj %>% 
                            `[[` %>%
                   dplyr::select(predicted.id, predicted.id.score)
     predictions[[refdata_column]] = predictions$predicted.id

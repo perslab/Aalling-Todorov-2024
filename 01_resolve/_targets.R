@@ -118,7 +118,14 @@ stage_04 = list(
               reclass_by_gene_hilo('Pomc', 1, 10, 'other', 'neuron')
             ),
     tar_target(xe_obj_cca_td_neuron,
-               xe_obj_cca_td_class %>% split_cell_class('neuron') %>% sc_transform_resolve
+               xe_obj_cca_td_class %>% split_cell_class('neuron') %>% sc_transform_resolve %>%
+             Seurat::RunUMAP(assay='Xenium',
+                           slot='counts',
+                           features = .@assays$SCT@meta.features %>% 
+                                      rownames_to_column(var = 'genes') %>% 
+                                      filter(genes != 'Lmx1a') %>% 
+                                      pull(genes),
+                           return.model = TRUE)
                ),
     tar_target(xe_obj_cca_td_neuron_2s,
             xe_obj_cca_td_neuron %>%
@@ -128,21 +135,42 @@ stage_04 = list(
             labels_from_polar_label %>%
             relabel_by_gene_hilo('Agrp', 1, 1000, 'Agrp') %>%
             drop_blah_labels %>% 
-            sc_transform_resolve
+            sc_transform_resolve %>%
+             Seurat::RunUMAP(assay='Xenium',
+                           slot='counts',
+                           features = .@assays$SCT@meta.features %>% 
+                                      rownames_to_column(var = 'genes') %>% 
+                                      filter(genes != 'Lmx1a') %>% 
+                                      pull(genes),
+                           return.model = TRUE)
         ),
     tar_target(xe_obj_cca_td_neuron_labels,
                transfer_data_cca_00(xe_obj_cca_td_neuron, obj_fgf1_neurons_sct_xeg, "labels") %>%
                relabel_by_gene_hilo('Agrp', 1, 10, 'Agrp')
                ),
     tar_target(xe_obj_cca_td_other,
-               xe_obj_cca_td_class %>% split_cell_class('other') %>% sc_transform_resolve
+               xe_obj_cca_td_class %>% split_cell_class('other') %>% sc_transform_resolve %>%
+             Seurat::RunUMAP(assay='Xenium',
+                           slot='counts',
+                           features = .@assays$SCT@meta.features %>% 
+                                      rownames_to_column(var = 'genes') %>% 
+                                      filter(genes != 'Lmx1a') %>% 
+                                      pull(genes),
+                           return.model = TRUE)
                ),
     tar_target(xe_obj_cca_td_other_2s,
             xe_obj_cca_td_other %>%
             drop_blah_class %>% 
             sc_transform_resolve %>%
             transfer_data_cca_00(obj_fgf1_other_sct_xeg, 'polar_label') %>%
-            labels_from_polar_label
+            labels_from_polar_label %>%
+             Seurat::RunUMAP(assay='Xenium',
+                           slot='counts',
+                           features = .@assays$SCT@meta.features %>% 
+                                      rownames_to_column(var = 'genes') %>% 
+                                      filter(genes != 'Lmx1a') %>% 
+                                      pull(genes),
+                           return.model = TRUE)
         ),
     tar_target(xe_obj_cca_td_other_labels,
                transfer_data_cca_00(xe_obj_cca_td_other, obj_fgf1_other_sct_xeg, 'labels')
@@ -250,7 +278,14 @@ stage_04_uni = list(
             labels_from_polar_label %>%
             relabel_by_gene_hilo('Agrp', 1, 1000, 'Agrp') %>%
             drop_blah_labels %>% 
-            sc_transform_resolve
+            sc_transform_resolve %>%
+             Seurat::RunUMAP(assay='Xenium',
+                           slot='counts',
+                           features = .@assays$SCT@meta.features %>% 
+                                      rownames_to_column(var = 'genes') %>% 
+                                      filter(genes != 'Lmx1a') %>% 
+                                      pull(genes),
+                           return.model = TRUE)
         ),
     tar_target(xe_obj_cca_td_neuron_uni,
                xe_obj_cca_td_class_uni %>% split_cell_class('neuron') %>% sc_transform_resolve
@@ -267,7 +302,14 @@ stage_04_uni = list(
             drop_blah_class %>% 
             sc_transform_resolve %>%
             transfer_data_cca_00_unimodal(obj_fgf1_other_sct_xeg, 'polar_label') %>%
-            labels_from_polar_label
+            labels_from_polar_label %>%
+             Seurat::RunUMAP(assay='Xenium',
+                           slot='counts',
+                           features = .@assays$SCT@meta.features %>% 
+                                      rownames_to_column(var = 'genes') %>% 
+                                      filter(genes != 'Lmx1a') %>% 
+                                      pull(genes),
+                           return.model = TRUE)
         ),
     tar_target(xe_obj_cca_td_other_labels_uni,
                transfer_data_cca_00_unimodal(xe_obj_cca_td_other_uni, obj_fgf1_other_sct_xeg, 'labels')
