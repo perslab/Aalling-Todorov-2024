@@ -544,7 +544,8 @@ annotate_summary_groupings = function(da_results, restored_df){
         mutate(restored_grouping = case_when(SpatialFDR.fgf1 < 0.1 ~ exact_grouping,
                                              TRUE ~ 'none')) %>%
         mutate(fgf1_grouping = polarity.fgf1) %>%
-        select(all_of(c(colnames(da_results), c("comparison", "restored", 'exact_grouping', 'restored_grouping', 'fgf1_grouping'))))
+        mutate(bl6_grouping = polarity.BL6) %>%
+        select(all_of(c(colnames(da_results), c("comparison", "restored", 'exact_grouping', 'restored_grouping', 'fgf1_grouping', 'bl6_grouping'))))
     da_results
 }
 
@@ -619,7 +620,7 @@ run_all_fgsea = function(deg_results, padj_cutoff=0.10, tag=''){
 
 annotate_nhg = function(da_results_nhg){
     nhg_annotation = da_results_nhg %>%
-        select(Nhood, restored_grouping) %>%
+        select(Nhood, restored_grouping, bl6_grouping) %>%
         distinct %>%
         mutate(Nhood = as.character(Nhood))
     nhg_annotation
