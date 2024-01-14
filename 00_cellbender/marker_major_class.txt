@@ -1,0 +1,7 @@
+>neuron
+expressed: Rbfox3, Snap25
+not expressed: Gfap, Aldh1l1, Aqp4, Bmpr1b, Fgfr3, Opalin, Plp1, Olig2, Olig1, Vcan, Gpr17, Cldn5, Pecam1, Rax, Col23a1, Crym, Lum, Col1a1, Pdgfrb, Foxj1, Pifo, Dynlrb2, Dcn, Cfh, Cped1 
+
+>other
+expressed: Gfap, Aldh1l1, Aqp4, Bmpr1b, Fgfr3, Opalin, Plp1, Olig2, Olig1, Vcan, Gpr17, Cldn5, Pecam1, Rax, Col23a1, Crym, Lum, Col1a1, Pdgfrb, Foxj1, Pifo, Dynlrb2, Dcn, Cfh, Cped1
+not expressed: Rbfox3, Snap25
