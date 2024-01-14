@@ -309,3 +309,10 @@ add_metadata_label_to_seurat = function(obj, label_str, col_name){
     obj = AddMetaData(obj, label_str, col.name = col_name)
     obj
 }
+
+
+seurat_v5_to_v4 = function(obj){
+    obj[['RNA']] = as(object = obj[["RNA"]], Class = "Assay")
+    obj[['integrated']] = as(object = obj[['integrated']], Class = "Assay")
+    obj
+}
