@@ -19,24 +19,24 @@ convert_obj_to_sce = function(obj){
 }
 
 
-make_milo = function(sce){
+make_milo = function(sce, k=40, d=30, prop=0.1){
     milo_obj = miloR::Milo(sce) %>%
-    .milo_buildGraph() %>%
-    .milo_makeNhoods() %>%
+    .milo_buildGraph(k=k, d=d) %>%
+    .milo_makeNhoods(k=k, d=d, prop=prop) %>%
     .milo_countCells() %>%
-    .milo_calcNhoodDistance() %>%
+    .milo_calcNhoodDistance(d=d) %>%
     .milo_buildNhoodGraph()
     milo_obj
 }
 
 
-.milo_buildGraph = function(milo_obj, ...){
-    milo_obj <- miloR::buildGraph(milo_obj, k=40, d=30, reduced.dim = 'PCA')
+.milo_buildGraph = function(milo_obj, k=40, d=30){
+    milo_obj <- miloR::buildGraph(milo_obj, k = k, d = d, reduced.dim = 'PCA')
     milo_obj
 }
 
-.milo_makeNhoods = function(milo_obj){
-    milo_obj <- miloR::makeNhoods(milo_obj, prop = 0.1, k= 40, d=30, refined = T, reduced_dims = 'PCA')
+.milo_makeNhoods = function(milo_obj, k=40, d=30, prop=0.1){
+    milo_obj <- miloR::makeNhoods(milo_obj, prop = prop, k = k, d = d, refined = T, reduced_dims = 'PCA')
     milo_obj
 }
 
@@ -46,8 +46,8 @@ make_milo = function(sce){
     milo_obj
 }
 
-.milo_calcNhoodDistance = function(milo_obj){
-    milo_obj <- miloR::calcNhoodDistance(milo_obj, d=30, reduced.dim = 'PCA')
+.milo_calcNhoodDistance = function(milo_obj, d=30){
+    milo_obj <- miloR::calcNhoodDistance(milo_obj, d=d, reduced.dim = 'PCA')
     milo_obj
 }
 
@@ -71,6 +71,17 @@ make_design_df = function(milo_obj){
 make_design_df_bmp1 = function(milo_obj){
     design_df <- data.frame(SingleCellExperiment::colData(milo_obj))[, c('hash.mcl.ID', 'group', "strain")]
     #convert seq-pool to factor
+    #keep unique rows
+    design_df <- dplyr::distinct(design_df)
+    #change rownames
+    rownames(design_df) <- design_df$hash.mcl.ID
+    design_df
+}
+
+make_design_df_cb = function(milo_obj){
+    design_df <- data.frame(SingleCellExperiment::colData(milo_obj))[, c('hash.mcl.ID', 'group', "strain", 'isolation_date')]
+    #convert seq-pool to factor
+    design_df$batch <- design_df$isolation_date %>% make.names %>% as.factor
     #keep unique rows
     design_df <- dplyr::distinct(design_df)
     #change rownames
@@ -690,7 +701,7 @@ get_seurat_nhg_markers = function(seurat_obj, nhgc, grouping_col, group_a, group
     cells_b = nhgc %>%
         filter(grouping %in% group_b) %>%
         pull(rowname)
-    markers = Seurat::FindMarkers(seurat_obj, ident.1=cells_a, ident.2=cells_b, slot="data", assay="SCT", verbose=TRUE,
+    markers = Seurat::FindMarkers(seurat_obj, ident.1=cells_a, ident.2=cells_b, slot="data", verbose=TRUE,
                                   min.cells.group = 10, 
                                   min.cells.feature = 10,
                                   min.pct = 0.01,
