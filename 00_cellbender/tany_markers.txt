@@ -1,0 +1,11 @@
+>a1_Tanycytes
+expressed: Mafb, Necab2, Slc17a8 
+
+>a2_Tanycytes
+expressed: Pdzph1
+
+>b1_Tanycytes
+expressed: Frzb
+
+>b2_Tanycytes
+expressed: Scn7a, Adm
