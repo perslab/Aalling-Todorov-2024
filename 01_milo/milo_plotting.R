@@ -1,7 +1,7 @@
 make_kde2d = function(nhgc_coords){
     range_factor = 0.25
-    x = nhgc_coords$UMAP_1
-    y = nhgc_coords$UMAP_2
+    x = nhgc_coords$umap_1
+    y = nhgc_coords$umap_2
     x_min = min(x)
     x_max = max(x)
     x_range = x_max - x_min
@@ -139,7 +139,7 @@ plot_group_overview = function(obj, nhgc, grouping_col, plot_title){
     kde_df = make_kde_df(nhgc_coords)
     gg = ggplot() + 
         labs(title=plot_title) +
-        geom_point(data=nhgc_coords, aes(x = UMAP_1, y = UMAP_2, color = labels), alpha=0.2) + 
+        geom_point(data=nhgc_coords, aes(x = umap_1, y = umap_2, color = labels), alpha=0.2) + 
         scale_color_manual(values=color_scale) +
         theme_void() + 
         theme(legend.position="none") + 
@@ -176,7 +176,7 @@ make_fp_plot = function(obj, value){
 
 
 make_plot_data = function(obj, nhgc_coords, gene){
-    gene_vals = obj %>% `@`('assays') %>% `$`('SCT') %>% `@`('counts') %>% 
+    gene_vals = obj %>% `@`('assays') %>% `$`('integrated') %>% `$`('scale.data') %>% 
         `[`(gene,) %>% 
         enframe(name = 'rowname')
     max_cutoff_q = gene_vals %>% pull(value) %>% quantile(0.99)
@@ -194,7 +194,7 @@ make_featureplot = function(obj, nhgc, grouping_col, gene){
     plot_data = make_plot_data(obj, nhgc_coords, gene)
     kde_df = make_kde_df(nhgc_coords)
     gg = ggplot() + 
-        geom_point(data=plot_data, aes(x = UMAP_1, y = UMAP_2, colour=value)) +
+        geom_point(data=plot_data, aes(x = umap_1, y = umap_2, colour=value)) +
         scale_colour_gradient(low = "#cce7d7", high = "#006f2d")
     gg = add_contours_no_label(gg, kde_df)
     gg = gg + labs(title=gene)
