@@ -18,9 +18,25 @@ fix_mat_colnames = function(mat){
 }
 
 
+fix_mat_colnames_ranger = function(mat){
+    new_colnames = mat %>%
+        colnames %>%
+        str_replace('_out_', '_') %>% 
+        str_replace('-1', '') %>%
+        str_replace('_raw_', '_')
+    colnames(mat) = new_colnames
+    mat
+}
+
+
 make_obj_from_mat = function(mat){
     obj = CreateSeuratObject(counts = mat, names.field = 1, names.delim = "_",
                              min.features = 500, min.cells = 10)
+    good_cells = obj %>%
+        `[[` %>%
+        filter(nCount_RNA > 1100) %>%
+        rownames
+    obj = obj %>% subset(cells = good_cells)
     obj
 }
 
@@ -135,6 +151,22 @@ obj
 }
 
 
+rpca_sct_integrate = function(obj, batch, nfeats){
+    obj.list <- SplitObject(obj, split.by = batch)
+    obj.list <- lapply(X = obj.list, FUN = SCTransform, method = "glmGamPoi")
+    features <- SelectIntegrationFeatures(object.list = obj.list, nfeatures = 5000)
+    obj.list <- PrepSCTIntegration(object.list = obj.list, anchor.features = features)
+    obj.list <- lapply(X = obj.list, FUN = RunPCA, features = features)
+    
+    obj.anchors <- FindIntegrationAnchors(object.list = obj.list, normalization.method = "SCT",
+    anchor.features = features, dims = 1:30, reduction = "rpca", k.anchor = 25)
+    
+    obj.combined.sct <- IntegrateData(anchorset = obj.anchors, normalization.method = "SCT", dims = 1:30, k.weight = 25)
+    obj.combined.sct <- RunPCA(obj.combined.sct, verbose = FALSE)
+    obj.combined.sct <- RunUMAP(obj.combined.sct, reduction = "pca", dims = 1:30)
+}
+
+
 transfer_labels_via_map_query = function(obj = obj, 
                                          dims = 30, 
                                          ref_path = ref_path){
@@ -208,4 +240,7 @@ map_camp_seurat_cluster = function(query, ref_path=''){
 #       predictions <- TransferData(anchorset = anchors, refdata = ref_sub$labels_202310, dims = seq(dims)) 
 #     predictions
 }
+
+
+
 

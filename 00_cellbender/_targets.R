@@ -18,7 +18,10 @@ tar_option_set(
   error = "null",
   retrieval = "worker",
   storage = "worker",
-  workspace_on_error = TRUE
+  memory = "transient",
+  garbage_collection = TRUE,
+  workspace_on_error = TRUE,
+  priority=0.5
   # Set other options as needed.
 )
 
@@ -41,7 +44,7 @@ options(clustermq.scheduler = "multicore",
 
 stage_01 = list(
   tar_target(path_to_cb, 
-             paste0(Sys.getenv("PROJECT_DIR"), 'data/cellbender/raw'), 
+             paste0(Sys.getenv("PROJECT_DIR"), 'data/cellbender/cellbender_h5'), 
              format = "file",
              packages=c("tidyverse", "Seurat", "scCustomize")),
   tar_target(path_to_sample_meta, 
@@ -61,7 +64,11 @@ stage_01 = list(
   tar_target(obj_cb_02,
              obj_cb_01 %>%
              reconsitute_rna_seurat %>%
-             process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.5))
+             process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.5, k.anchor=25)),
+    tar_target(obj_cb_02_sct,
+             obj_cb_01 %>%
+             reconsitute_rna_seurat %>%
+             sc_transform_fgf1 %>% run_sct_chaser)
   )
 
 stage_02 = list(
@@ -83,14 +90,14 @@ stage_02 = list(
                obj_cb_class %>% 
                subset(subset = class == 'other') %>%
                reconsitute_rna_seurat %>%
-               process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.8) %>%
+               process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.8, k.anchor=25) %>%
                annotate_by_level(counts_assay='RNA', 
                                  graph_name=NULL, 
                                  classification_data_path=path_to_other_markers, 
                                  annotation_col='labels_lvl1') %>%
                subset(subset = labels_lvl1 != 'neuron') %>%
                reconsitute_rna_seurat %>%
-               process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.8),
+               process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.8, k.anchor=25),
                packages=c("tidyverse", "Seurat", "CellAnnotatoR")),
     tar_target(label_chunks_other_path, paste0(Sys.getenv("PROJECT_DIR"), '00_cellbender/cluster_surgery/labels_chunk_other.qs'), format = "file"),
     tar_target(label_chunks_other,
@@ -103,7 +110,7 @@ stage_02 = list(
                obj_cb_other_01 %>%
                subset(subset = labels_chunk != 'g_drop') %>%
                reconsitute_rna_seurat %>%
-               process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.8) %>%
+               process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.8, k.anchor=25) %>%
                annotate_by_level(counts_assay='RNA', 
                                  graph_name=NULL, 
                                  classification_data_path=path_to_other_markers, 
@@ -113,14 +120,14 @@ stage_02 = list(
                obj_cb_class %>% 
                subset(subset = class == 'neuron') %>%
                reconsitute_rna_seurat %>%
-               process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.8) %>%
+               process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.8, k.anchor=25) %>%
                annotate_by_level(counts_assay='RNA', 
                                  graph_name=NULL, 
                                  classification_data_path=path_to_other_markers, 
                                  annotation_col='labels_lvl1_mg') %>%
                subset(subset = labels_lvl1_mg == 'neuron') %>%
                reconsitute_rna_seurat %>%
-               process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.8) %>%
+               process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.8, k.anchor=25) %>%
                map_ref_merged_clusters(column_name='labels_lvl1', ref="/projects/amj/my_projects/reference_ARCDVC/20231010_full_integration/1_dat/1_seurat_obj/20231027_ARC_VMH_filtered.qs")  %>%
                AddMetaData(.,
                            .[[]] %>% select(labels_lvl1) %>% rename(labels_lvl2 = labels_lvl1)),
@@ -186,9 +193,11 @@ stage_03 = list(
 
 stage_04 = list(
     tar_target(exp_labelled_other,
-               obj_cb_other_01),
+               obj_cb_other_01,
+               priority=0.1),
         tar_target(exp_labelled_neuron,
-               obj_cb_neuron_00)
+               obj_cb_neuron_00,
+               priority=0.1)
 )
 
 clusters_tibble_lvl1 = qs::qread('../01_milo_cellbender/clusters_tibble_lvl1.qs') #%>% 
@@ -207,23 +216,23 @@ stage_04a = tar_map(
              reconsitute_rna_seurat %>%
 #              process_seurat(method = "integrate", 
 #                             batch ="batch", # batch to batch
-#                             dims = 30, res = 0.8,
+#                             dims = 30, res = 0.8, k.anchor=25,
 #                             k.weight = 40)
              run_until_success(function() subset(eval(.)) %>% process_seurat(method = "integrate", 
-                                              batch = "Index.10x_SCOP",
-                                              dims = 30, res = 0.8,
+                                              batch = "batch",
+                                              dims = 30, res = 0.8, k.anchor=25,
                                               k.weight = 100),
                                function() subset(eval(.)) %>% process_seurat(method = "integrate", 
-                                              batch = "Index.10x_SCOP",
-                                              dims = 30, res = 0.8,
+                                              batch = "batch",
+                                              dims = 30, res = 0.8, k.anchor=25,
                                               k.weight = 50),
                                function() subset(eval(.)) %>% process_seurat(method = "integrate", 
-                                              batch = "Index.10x_SCOP",
-                                              dims = 30, res = 0.8,
+                                              batch = "batch",
+                                              dims = 30, res = 0.8, k.anchor=25,
                                               k.weight = 20),
                                function() subset(eval(.)) %>% process_seurat(method = "integrate", 
-                                              batch = "Index.10x_SCOP",
-                                              dims = 30, res = 0.8,
+                                              batch = "batch",
+                                              dims = 30, res = 0.8, k.anchor=25,
                                               k.weight = 10),
                                function() subset(eval(.)) %>% Seurat::SCTransform(assay='RNA',
                                                method="glmGamPoi",
@@ -237,7 +246,8 @@ stage_04a = tar_map(
                                                verbose=TRUE)
                               ) %>% #reset batch for downstream applications
              reset_orig.batch %>% 
-             prep_obj_for_milo_cb_v01
+             prep_obj_for_milo_cb_v01,
+             priority=0.0001
              )
 )
 
@@ -249,7 +259,7 @@ stage_04 = list(stage_04, stage_04a)
 #                obj_cb_class %>% 
 # #                subset(subset = class == 'other') %>%
 #.               reconsitute_rna_seurat %>%
-#                process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.75) %>%
+#                process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.75, k.anchor=25, k.weight=25) %>%
 #                annotate_by_level(counts_assay='RNA', 
 #                                  graph_name=NULL, 
 #                                  classification_data_path=path_to_other_markers, 
