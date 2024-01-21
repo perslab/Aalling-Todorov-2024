@@ -38,7 +38,8 @@ options(clustermq.scheduler = "multicore",
         clustermq.ssh.timeout=36000,
         clustermq.worker.timeout=36000,
         clustermq.error.timeout=36000,
-        clustermq.ssh.log='clustermq_sshlog.log'
+        clustermq.ssh.log='clustermq_sshlog.log',
+        future.globals.maxSize = 500e+09
         )
 
 
@@ -64,9 +65,25 @@ stage_01 = list(
   tar_target(obj_cb_02,
              obj_cb_01 %>%
              reconsitute_rna_seurat %>%
-             process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.5, k.anchor=25)),
-    tar_target(obj_cb_02_sct,
+             process_seurat(method = "integrate", batch ="batch", dims = 30, res = 0.5, k.anchor=25, k.weight=100)),
+  tar_target(obj_cb_02_rsct_b,
              obj_cb_01 %>%
+             reconsitute_rna_seurat %>%
+             rpca_sct_integrate(batch="batch",
+                              nfeats=5000,
+                              dims=30,
+                              k.anchor=25,
+                              k.weight=100)),
+  tar_target(obj_cb_02_rsct_i,
+             obj_cb_01 %>%
+             reconsitute_rna_seurat %>%
+             rpca_sct_integrate(batch="Index.10x_SCOP",
+                              nfeats=5000,
+                              dims=30,
+                              k.anchor=25,
+                              k.weight=100)),    
+    tar_target(obj_cb_02_sct,
+             obj_cb_02 %>%
              reconsitute_rna_seurat %>%
              sc_transform_fgf1 %>% run_sct_chaser)
   )
@@ -120,14 +137,14 @@ stage_02 = list(
                obj_cb_class %>% 
                subset(subset = class == 'neuron') %>%
                reconsitute_rna_seurat %>%
-               process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.8, k.anchor=25) %>%
+               process_seurat(method = "integrate", batch ="batch", dims = 30, res = 0.8, k.anchor=25) %>%
                annotate_by_level(counts_assay='RNA', 
                                  graph_name=NULL, 
                                  classification_data_path=path_to_other_markers, 
                                  annotation_col='labels_lvl1_mg') %>%
                subset(subset = labels_lvl1_mg == 'neuron') %>%
                reconsitute_rna_seurat %>%
-               process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.8, k.anchor=25) %>%
+               process_seurat(method = "integrate", batch ="batch", dims = 30, res = 0.8, k.anchor=25) %>%
                map_ref_merged_clusters(column_name='labels_lvl1', ref="/projects/amj/my_projects/reference_ARCDVC/20231010_full_integration/1_dat/1_seurat_obj/20231027_ARC_VMH_filtered.qs")  %>%
                AddMetaData(.,
                            .[[]] %>% select(labels_lvl1) %>% rename(labels_lvl2 = labels_lvl1)),
@@ -146,7 +163,7 @@ stage_02 = list(
                AddMetaData(label_chunks_neuron) %>%
                subset(subset = labels_chunk != 'n_drop') %>%
                reconsitute_rna_seurat %>%
-               process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.5) %>%
+               process_seurat(method = "integrate", batch ="Index.10x_SCOP", dims = 30, res = 0.5, k.anchor=25) %>%
                map_ref_merged_clusters(column_name='labels_lvl1', ref="/projects/amj/my_projects/reference_ARCDVC/20231010_full_integration/1_dat/1_seurat_obj/20231027_ARC_VMH_filtered.qs"),
                packages=c("tidyverse", "Seurat", "CellAnnotatoR")
               ),
@@ -157,7 +174,8 @@ stage_02 = list(
                process_seurat(method = "integrate",
                               nfeats = 2000,
                               batch ="batch",
-                              dims = 20, res = 0.5) %>%
+                              dims = 20, res = 0.5,
+                              k.anchor=25) %>%
                annotate_by_level(counts_assay='RNA', 
                                  graph_name=NULL, 
                                  classification_data_path=path_to_tany_markers, 
@@ -172,7 +190,14 @@ stage_02 = list(
                select(labels_lvl2) %>%
                AddMetaData(obj_cb_other_02, .) %>% 
                set_empty_labels_lvl2_to_lvl1,
-               packages=c("tidyverse", "Seurat"))
+               packages=c("tidyverse", "Seurat")),
+    tar_target(obj_cb_other_01t,
+           obj_cb_tany %>% 
+           `[[` %>% 
+           select(labels_lvl2) %>%
+           AddMetaData(obj_cb_other_01, .) %>% 
+           set_empty_labels_lvl2_to_lvl1,
+           packages=c("tidyverse", "Seurat"))
 )
 
 stage_03 = list(
