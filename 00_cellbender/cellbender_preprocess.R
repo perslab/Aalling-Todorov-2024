@@ -151,19 +151,25 @@ obj
 }
 
 
-rpca_sct_integrate = function(obj, batch, nfeats){
+rpca_sct_integrate = function(obj=obj,
+                              batch=NULL,
+                              nfeats=3000,
+                              dims=30,
+                              k.anchor=5,
+                              k.weight=100){
     obj.list <- SplitObject(obj, split.by = batch)
     obj.list <- lapply(X = obj.list, FUN = SCTransform, method = "glmGamPoi")
-    features <- SelectIntegrationFeatures(object.list = obj.list, nfeatures = 5000)
+    features <- SelectIntegrationFeatures(object.list = obj.list, nfeatures = nfeats)
     obj.list <- PrepSCTIntegration(object.list = obj.list, anchor.features = features)
     obj.list <- lapply(X = obj.list, FUN = RunPCA, features = features)
     
     obj.anchors <- FindIntegrationAnchors(object.list = obj.list, normalization.method = "SCT",
-    anchor.features = features, dims = 1:30, reduction = "rpca", k.anchor = 25)
+    anchor.features = features, dims = seq(dims), reduction = "rpca", k.anchor = k.anchor)
     
-    obj.combined.sct <- IntegrateData(anchorset = obj.anchors, normalization.method = "SCT", dims = 1:30, k.weight = 25)
+    obj.combined.sct <- IntegrateData(anchorset = obj.anchors, normalization.method = "SCT", dims = seq(dims), k.weight = k.weight)
     obj.combined.sct <- RunPCA(obj.combined.sct, verbose = FALSE)
-    obj.combined.sct <- RunUMAP(obj.combined.sct, reduction = "pca", dims = 1:30)
+    obj.combined.sct <- RunUMAP(obj.combined.sct, reduction = "pca", dims = seq(dims))
+    obj
 }
 
 
