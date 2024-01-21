@@ -67,9 +67,25 @@ stage_01 = list(
   tar_target(obj_cb_02,
              obj_cb_01 %>%
              reconsitute_rna_seurat %>%
-             process_seurat(method = "integrate", batch ="batch", dims = 30, res = 0.5)),
-    tar_target(obj_cb_02_sct,
+             process_seurat(method = "integrate", batch ="batch", dims = 30, res = 0.5, k.anchor=25, k.weight=100)),
+  tar_target(obj_cb_02_rsct_b,
              obj_cb_01 %>%
+             reconsitute_rna_seurat %>%
+             rpca_sct_integrate(batch="batch",
+                              nfeats=5000,
+                              dims=30,
+                              k.anchor=25,
+                              k.weight=100)),
+  tar_target(obj_cb_02_rsct_i,
+             obj_cb_01 %>%
+             reconsitute_rna_seurat %>%
+             rpca_sct_integrate(batch="Index.10x_SCOP",
+                              nfeats=5000,
+                              dims=30,
+                              k.anchor=25,
+                              k.weight=100)),    
+    tar_target(obj_cb_02_sct,
+             obj_cb_02 %>%
              reconsitute_rna_seurat %>%
              sc_transform_fgf1 %>% run_sct_chaser)
   )
