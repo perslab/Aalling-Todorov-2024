@@ -96,7 +96,6 @@ make_split_objs_lvl1 = tar_map(
 )
 
 
-
 stage_01 = list(
   tar_target(exp_labelled_other_path, paste0(Sys.getenv("PROJECT_DIR"), '/00_cellbender/_targets/objects/obj_cb_other_01'), format = "file"),
   tar_target(exp_labelled_neuron_path, paste0(Sys.getenv("PROJECT_DIR"), '/00_cellbender/_targets/objects/obj_cb_neuron_00'), format = "file"),
@@ -106,8 +105,36 @@ stage_01 = list(
   )
 
 
+stage_02a = list(
+  tar_target(clusters_tibble_path, 'clusters_tibble_lvl1.qs', format = "file"),
+  tar_target(clusters_tibble_obj, qs::qread(clusters_tibble_path))
+)
+
+combination_recipe = qs::qread('combination_recipe.qs')
+stage_02b = tar_eval(
+  values = combination_recipe,
+  tar_combine(output_name,
+              make_split_objs_lvl1 %>% tar_select_targets(any_of(da_names_idx)))
+)
+combination_recipe = qs::qread('combination_recipe.qs')
+stage_02c = tar_map(
+  values = combination_recipe,
+  names = old.label,
+  tar_target(combined_batchy_score,
+             combination_tibble_obj  %>%
+                 rename(label = name) %>%
+                 left_join(clusters_tibble_obj, by='label')
+            )
+)
+
+
+
+stage_02 = list(stage_02a, stage_02b, stage_02c)
+
+
 run_list = list(
   stage_01,
+  stage_02,
   list()
 )
 
