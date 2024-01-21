@@ -18,6 +18,8 @@ tar_option_set(
   error = "null",
   retrieval = "worker",
   storage = "worker",
+      memory = "transient",
+  garbage_collection = TRUE,    
     workspace_on_error = TRUE # Save a workspace file for a target that errors out.
   # Set other options as needed.
 )
