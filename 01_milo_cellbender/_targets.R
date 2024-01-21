@@ -66,13 +66,13 @@ make_split_objs_class = tar_map(
              object %>%
              set_labels_to_class %>%
              prep_obj_for_milo_cb_v01 %>%
-             set_batch_to_lane %>%
-             prep_obj_for_milo_cb_v01(set_orig.batch = FALSE) %>%
+#              set_batch_to_lane %>%
+#              prep_obj_for_milo_cb_v01(set_orig.batch = FALSE) %>%
              subset_exp_by_time(day) %>%
              single_split(cluster) %>%
              reconsitute_rna_seurat %>%
              process_seurat(method = "integrate", 
-                            batch ="Index.10x_SCOP",
+                            batch ="batch",
                             k.anchor=25,
                             dims = 30, res = 0.8),
              priority=0.99),
@@ -104,8 +104,9 @@ make_da_results_class = tar_map(
   tar_target(nhm,
              make_nhm(milo_obj)),
   tar_target(da_results_02,
-             annotate_nhood_counts(da_results_01, nhm) %>%
-             combine_splits(., nhm)),
+             annotate_nhood_counts(da_results_01, nhm) # %>%
+             # combine_splits(., nhm)
+            ),
   tar_target(da_results_02_idx,
              milo_index_obj %>%
              select(-any_of('labels')) %>%
@@ -213,8 +214,9 @@ make_da_results_lvl1 = tar_map(
   tar_target(nhm,
              make_nhm(milo_obj)),
   tar_target(da_results_02,
-             annotate_nhood_counts(da_results_01, nhm) %>%
-             combine_splits(., nhm)),
+             annotate_nhood_counts(da_results_01, nhm) # %>%
+             # combine_splits(., nhm)
+            ),
   tar_target(da_results_02_idx,
              milo_index_obj %>%
              select(-any_of('labels')) %>%
@@ -317,8 +319,9 @@ make_da_results_labels_chunk = tar_map(
   tar_target(nhm,
              make_nhm(milo_obj)),
   tar_target(da_results_02,
-             annotate_nhood_counts(da_results_01, nhm) %>%
-             combine_splits(., nhm)),
+             annotate_nhood_counts(da_results_01, nhm) # %>%
+             # combine_splits(., nhm)
+            ),
   tar_target(da_results_02_idx,
              milo_index_obj %>%
              select(-any_of('labels')) %>%
@@ -376,8 +379,14 @@ stage_02b = tar_eval(
   tar_combine(output_name_idx,
               make_da_results %>% tar_select_targets(any_of(da_names_idx)))
 )
+combination_recipe = qs::qread('combination_recipe_pldf.qs')
+stage_02c = tar_eval(
+  values = combination_recipe,
+  tar_combine(output_name,
+              make_da_results %>% tar_select_targets(any_of(da_names)))
+)
 
-stage_02 = list(stage_02, stage_02b)
+stage_02 = list(stage_02, stage_02b, stage_02c)
 
 
 restored_recipe = qs::qread("restored_recipe.qs")
@@ -495,11 +504,11 @@ run_list = list(
   stage_02,
   stage_03,
   stage_04,
-#   stage_05,
+  stage_05,
   stage_06,
   stage_07,
-  stage_xx,
-  list() 
+  stage_xx
+
 )
 
 run_list
