@@ -15,6 +15,7 @@ sc_transform_resolve = function(xenium.obj, keep_cells){
     Seurat::SCTransform(assay='Xenium',
                         method="glmGamPoi",
                         vst.flavor="v2",
+                        clip.range = c(-10, 10),
                         verbose=TRUE)
 }
 
