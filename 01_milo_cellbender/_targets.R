@@ -430,7 +430,7 @@ stage_05 = tar_map(
   values = deg_restored_recipe,
   names = deg_output_suffix,
   tar_target(deg,
-             get_seurat_nhg_markers(seurat_obj, nhgc_obj, nhood_grouping, group_a, group_b=group_b, tag=deg_output_suffix)),
+             get_seurat_nhg_markers_sample_bulk(seurat_obj, nhgc_obj, nhood_grouping, group_a, group_b=group_b, tag=deg_output_suffix)),
   tar_target(deg_ensmus,
              add_gsea_cols_to_seurat_marker_results(deg)),
   tar_target(gsea,
@@ -440,36 +440,38 @@ stage_05 = tar_map(
   tar_target(gost_result,
              gost %>% `[[`('result') %>% mutate(tag = deg_output_suffix))
 )
-# summary_plot_recipe = qs::qread("summary_plot_recipe.qs")
-# stage_05 = list(
-#   stage_05,
-#   tar_map(
-#     values = summary_plot_recipe,
-#     names = deg_output_suffix,
-#     # tar_target(deg_summary_plot_gSCT,
-#     #            make_summary_deg_plot(global_seurat_obj, nhgc_obj, deg_ensmus_obj, nhood_grouping, name),
-#     #            packages=c("tidyverse", "ggplot2", "patchwork", "Seurat")),
-#     # tar_target(deg_summary_file_gSCT,
-#     #            save_summary_plot(deg_summary_plot_gSCT, c("gSCT_", deg_output_suffix)),
-#     #            packages=c("tidyverse", "ggplot2", "patchwork", "Seurat"),
-#     #            format="file"),
-# # 
-# # 
-# # 
-#     tar_target(deg_summary_plot_gSCT,
-#                make_summary_deg_plot(global_seurat_obj, nhgc_obj, deg_ensmus_obj, nhood_grouping, name) %>%
-#                save_summary_plot(., c("gSCT_", deg_output_suffix)),
-#                packages=c("tidyverse", "ggplot2", "patchwork", "Seurat")),
-#     tar_target(deg_summary_plot_reSCT,
-#                make_summary_deg_plot(seurat_obj, nhgc_obj, deg_ensmus_obj, nhood_grouping, name) %>%
-#                save_summary_plot(c("reSCT_", deg_output_suffix)),
-#                packages=c("tidyverse", "ggplot2", "patchwork", "Seurat"))
-#     # tar_target(deg_summary_plot_gSCT,
-#     #            make_and_save_summary_plot(global_seurat_obj, nhgc_obj, deg_ensmus_obj, nhood_grouping, name, 'gSCT_', deg_output_suffix),
-#     #            packages=c("tidyverse", "ggplot2", "patchwork", "Seurat"),
-#     #            format="file")
-#   )
-# )
+summary_plot_recipe = qs::qread("summary_plot_recipe.qs")
+stage_05 = list(
+  stage_05,
+  tar_map(
+    values = summary_plot_recipe,
+    names = deg_output_suffix,
+    # tar_target(deg_summary_plot_gSCT,
+    #            make_summary_deg_plot(global_seurat_obj, nhgc_obj, deg_ensmus_obj, nhood_grouping, name),
+    #            packages=c("tidyverse", "ggplot2", "patchwork", "Seurat")),
+    # tar_target(deg_summary_file_gSCT,
+    #            save_summary_plot(deg_summary_plot_gSCT, c("gSCT_", deg_output_suffix)),
+    #            packages=c("tidyverse", "ggplot2", "patchwork", "Seurat"),
+    #            format="file"),
+# 
+# 
+# 
+    tar_target(deg_summary_plot_gSCT,
+               make_summary_deg_plot(global_seurat_obj, nhgc_obj, deg_ensmus_obj, nhood_grouping, name) %>%
+               save_summary_plot(., c("gSCT_", deg_output_suffix)),
+               packages=c("tidyverse", "ggplot2", "patchwork", "Seurat"),
+               priority=0.0001),
+    tar_target(deg_summary_plot_reSCT,
+               make_summary_deg_plot(seurat_obj, nhgc_obj, deg_ensmus_obj, nhood_grouping, name) %>%
+               save_summary_plot(c("reSCT_", deg_output_suffix)),
+               packages=c("tidyverse", "ggplot2", "patchwork", "Seurat"),
+               priority=0.0001)
+    # tar_target(deg_summary_plot_gSCT,
+    #            make_and_save_summary_plot(global_seurat_obj, nhgc_obj, deg_ensmus_obj, nhood_grouping, name, 'gSCT_', deg_output_suffix),
+    #            packages=c("tidyverse", "ggplot2", "patchwork", "Seurat"),
+    #            format="file")
+  )
+)
 
 
 
@@ -507,7 +509,8 @@ run_list = list(
   stage_05,
   stage_06,
   stage_07,
-  stage_xx
+  stage_xx,
+  list()
 
 )
 
