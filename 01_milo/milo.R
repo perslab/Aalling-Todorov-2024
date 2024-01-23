@@ -707,7 +707,10 @@ get_seurat_nhg_markers_sample_bulk = function(seurat_obj, nhgc, grouping_col, gr
     
     bulks_a = pseudo_obj %>% `[[` %>% filter((!!sym(grouping_col)) == group_a) %>% rownames
     bulks_b = pseudo_obj %>% `[[` %>% filter((!!sym(grouping_col)) == group_b) %>% rownames
-
+    if (group_b == ''){
+        bulks_b = pseudo_obj %>% `[[` %>% filter((!!sym(grouping_col)) != group_a) %>% rownames
+    }
+    
     markers <- FindMarkers(object = pseudo_obj,
                              ident.1 = bulks_a, 
                              ident.2 = bulks_b,
