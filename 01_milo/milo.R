@@ -695,6 +695,15 @@ get_seurat_nhg_markers_sample_bulk = function(seurat_obj, nhgc, grouping_col, gr
     
     pseudo_obj <- AggregateExpression(seurat_obj, assays = "RNA", return.seurat = T, group.by = c("hash.mcl.ID", grouping_col))
     
+    #begin bullshit block.
+    #this part is necessary because the geniuses who coded seurat 
+    #replace all underscores with dashes when you run group.by
+    #can you believe this bullshit?
+    pseudo_meta = pseudo_obj %>% `[[`
+    pseudo_meta[[grouping_col]] = pseudo_meta %>% pull(grouping_col) %>% str_replace_all('-', '_')
+    pseudo_obj = pseudo_obj %>% AddMetaData(pseudo_meta)
+    #end bullshit block.
+    
     
     bulks_a = pseudo_obj %>% `[[` %>% filter((!!sym(grouping_col)) == group_a) %>% rownames
     bulks_b = pseudo_obj %>% `[[` %>% filter((!!sym(grouping_col)) == group_b) %>% rownames
