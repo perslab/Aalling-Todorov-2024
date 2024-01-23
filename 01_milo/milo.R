@@ -683,6 +683,32 @@ nhg2cell = function(nhm, da_results_nhg) {
 }
 
 
+get_seurat_nhg_markers_sample_bulk = function(seurat_obj, nhgc, grouping_col, group_a, group_b='', tag=''){
+    nhgc['grouping'] = nhgc[grouping_col]
+    group_a = stringr::str_split(group_a, pattern=fixed('.')) %>% unlist
+    
+    grouping_meta = nhgc %>%
+        select('rowname', !!grouping_col) %>%
+        column_to_rownames
+    
+    seurat_obj = seurat_obj %>% AddMetaData(grouping_meta)
+    
+    pseudo_obj <- AggregateExpression(seurat_obj, assays = "RNA", return.seurat = T, group.by = c("hash.mcl.ID", grouping_col))
+    
+    
+    bulks_a = pseudo_obj %>% subset(subset = fgf1_grouping == group_a) %>% Cells
+    bulks_b = pseudo_obj %>% subset(subset = fgf1_grouping == group_b) %>% Cells
+
+    markers <- FindMarkers(object = pseudo_obj,
+                             ident.1 = bulks_a, 
+                             ident.2 = bulks_b,
+                             test.use = "DESeq2")
+
+    markers['tag'] = tag
+    markers
+}
+
+
 get_seurat_nhg_markers = function(seurat_obj, nhgc, grouping_col, group_a, group_b='', tag=''){
     nhgc['grouping'] = nhgc[grouping_col]
     group_a = stringr::str_split(group_a, pattern=fixed('.')) %>% unlist
