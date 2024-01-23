@@ -696,8 +696,8 @@ get_seurat_nhg_markers_sample_bulk = function(seurat_obj, nhgc, grouping_col, gr
     pseudo_obj <- AggregateExpression(seurat_obj, assays = "RNA", return.seurat = T, group.by = c("hash.mcl.ID", grouping_col))
     
     
-    bulks_a = pseudo_obj %>% subset(subset = fgf1_grouping == group_a) %>% Cells
-    bulks_b = pseudo_obj %>% subset(subset = fgf1_grouping == group_b) %>% Cells
+    bulks_a = pseudo_obj %>% `[[` %>% filter((!!sym(grouping_col)) == group_a) %>% rownames
+    bulks_b = pseudo_obj %>% `[[` %>% filter((!!sym(grouping_col)) == group_b) %>% rownames
 
     markers <- FindMarkers(object = pseudo_obj,
                              ident.1 = bulks_a, 
