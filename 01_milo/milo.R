@@ -711,11 +711,98 @@ get_seurat_nhg_markers_sample_bulk = function(seurat_obj, nhgc, grouping_col, gr
         bulks_b = pseudo_obj %>% `[[` %>% filter((!!sym(grouping_col)) != group_a) %>% rownames
     }
     
+    expr_matrix = seurat_obj %>% GetAssayData(assay='RNA', layer = 'counts')
+    expressed_cells_count = rowSums(expr_matrix > 0)
+    expr_frac = 0.10
+    expr_ct = expr_matrix %>% dim %>% `[`(2) %>% `*`(expr_frac)
+    features_in_n_cells <- names(expressed_cells_count[expressed_cells_count >= expr_ct])
+    selected_features = features_in_n_cells %>% #only if not running variablefeatures
+        enframe %>% 
+        select(value) %>% 
+        filter(!str_detect(value, '^Gm|^Rik|^mt')) %>%
+        pull(value) 
+
     markers <- FindMarkers(object = pseudo_obj,
                              ident.1 = bulks_a, 
                              ident.2 = bulks_b,
+                             features = selected_features,
                              test.use = "DESeq2")
 
+    markers['tag'] = tag
+    markers
+}
+
+
+get_seurat_nhg_markers_negbinom = function(seurat_obj, nhgc, grouping_col, group_a, group_b='', tag=''){
+    nhgc['grouping'] = nhgc[grouping_col]
+    group_a = stringr::str_split(group_a, pattern=fixed('.')) %>% unlist
+    cells_a = nhgc %>%
+        filter(grouping %in% group_a) %>%
+        pull(rowname)
+    if (group_b == ''){
+        group_b = nhgc %>%
+            filter(!(grouping %in% group_a)) %>%
+            pull(grouping) %>%
+            as.character %>%
+            unique %>%
+            paste0(collapse='.')
+    }
+    group_b = stringr::str_split(group_b, pattern=fixed('.')) %>% unlist
+    cells_b = nhgc %>%
+        filter(grouping %in% group_b) %>%
+        pull(rowname)
+
+    expr_matrix = seurat_obj %>% GetAssayData(assay='RNA', layer = 'counts')
+    expressed_cells_count = rowSums(expr_matrix > 0)
+    expr_frac = 0.10
+    expr_ct = expr_matrix %>% dim %>% `[`(2) %>% `*`(expr_frac)
+    features_in_n_cells <- names(expressed_cells_count[expressed_cells_count >= expr_ct])
+    selected_features = features_in_n_cells %>% #only if not running variablefeatures
+        enframe %>% 
+        select(value) %>% 
+        filter(!str_detect(value, '^Gm|^Rik|^mt')) %>%
+        pull(value) 
+
+    markers = Seurat::FindMarkers(seurat_obj, ident.1=cells_a, ident.2=cells_b, assay='RNA', slot="counts", verbose=TRUE,
+                                  min.cells.group = 10, 
+                                  min.cells.feature = 10,
+                                  min.pct = 0.01,
+                                  logfc.threshold = 0,
+                                  test.use='negbinom',
+                                  latent.vars=c('hash.mcl.ID', 'batch'),
+                                  features=selected_features,
+                                  only.pos = FALSE) 
+    markers['tag'] = tag
+    markers
+}
+
+
+get_seurat_nhg_markers_MAST = function(seurat_obj, nhgc, grouping_col, group_a, group_b='', tag=''){
+    nhgc['grouping'] = nhgc[grouping_col]
+    group_a = stringr::str_split(group_a, pattern=fixed('.')) %>% unlist
+    cells_a = nhgc %>%
+        filter(grouping %in% group_a) %>%
+        pull(rowname)
+    if (group_b == ''){
+        group_b = nhgc %>%
+            filter(!(grouping %in% group_a)) %>%
+            pull(grouping) %>%
+            as.character %>%
+            unique %>%
+            paste0(collapse='.')
+    }
+    group_b = stringr::str_split(group_b, pattern=fixed('.')) %>% unlist
+    cells_b = nhgc %>%
+        filter(grouping %in% group_b) %>%
+        pull(rowname)
+    markers = Seurat::FindMarkers(seurat_obj, ident.1=cells_a, ident.2=cells_b, slot="data", verbose=TRUE,
+                                  min.cells.group = 10, 
+                                  min.cells.feature = 10,
+                                  min.pct = 0.01,
+                                  logfc.threshold = 0,
+                                  test.use='MAST',
+                                  latent.vars=c('hash.mcl.ID', 'batch'),
+                                  only.pos = FALSE) 
     markers['tag'] = tag
     markers
 }
