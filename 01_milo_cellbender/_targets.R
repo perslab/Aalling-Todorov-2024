@@ -430,7 +430,7 @@ stage_05 = tar_map(
   values = deg_restored_recipe,
   names = deg_output_suffix,
   tar_target(deg,
-             get_seurat_nhg_markers_sample_bulk(seurat_obj, nhgc_obj, nhood_grouping, group_a, group_b=group_b, tag=deg_output_suffix)),
+             get_seurat_nhg_markers_negbinom(seurat_obj, nhgc_obj, nhood_grouping, group_a, group_b=group_b, tag=deg_output_suffix)),
   tar_target(deg_ensmus,
              add_gsea_cols_to_seurat_marker_results(deg)),
   tar_target(gsea,
