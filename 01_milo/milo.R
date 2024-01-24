@@ -801,7 +801,7 @@ get_seurat_nhg_markers_MAST = function(seurat_obj, nhgc, grouping_col, group_a, 
                                   min.pct = 0.01,
                                   logfc.threshold = 0,
                                   test.use='MAST',
-                                  latent.vars=c('hash.mcl.ID', 'batch'),
+                                  latent.vars=c('hash.mcl.ID'),
                                   only.pos = FALSE) 
     markers['tag'] = tag
     markers
