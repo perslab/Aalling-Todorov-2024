@@ -481,6 +481,17 @@ stage_06 = tar_eval(
   tar_combine(output_name,
               stage_05 %>% tar_select_targets(any_of(results_name)))
 )
+
+## most convenient place to generate this combo recipe
+combined_recipe_nhgc = qs::qread("combined_recipe_nhgc.qs")
+stage_06b = tar_eval(
+  values = combined_recipe_nhgc,
+  tar_combine(output_name,
+              stage_04 %>% tar_select_targets(any_of(results_name)))
+)
+
+stage_06 = list(stage_06, stage_06b)
+
 stage_07 = list(
   tar_target(combined_deg_seurat_formatted,
              combined_deg_seurat %>%
