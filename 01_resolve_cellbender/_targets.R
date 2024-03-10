@@ -121,6 +121,7 @@ stage_01b = list(
                  set_batch_to_lane %>% # do not set batch to lane for cluster splits, will error on design or model matrix. reset later
                  prep_obj_for_milo_cb_v01(set_orig.batch = FALSE) %>%
                  reconsitute_rna_seurat %>%
+                 add_cell_class_and_polar_label %>%
                  process_seurat(method = "integrate", batch ="batch", dims = 30, res = 0.8, k.anchor=25),
                  packages=c("tidyverse", "Seurat")),
       tar_target(obj_d5_neuron,
@@ -131,6 +132,7 @@ stage_01b = list(
                  set_batch_to_lane %>% # do not set batch to lane for cluster splits, will error on design or model matrix. reset later
                  prep_obj_for_milo_cb_v01(set_orig.batch = FALSE) %>%
                  reconsitute_rna_seurat %>%
+                 add_cell_class_and_polar_label %>%
                  process_seurat(method = "integrate", batch ="orig.batch", dims = 30, res = 0.8, k.anchor=25),
                  packages=c("tidyverse", "Seurat"))
 
@@ -187,6 +189,46 @@ stage_01c = list(
 )
 
 
+stage_04 = list(
+#     tar_target(xe_obj_cca_td_class,
+#                transfer_data_cca_00_v02(obj_merged_sct, obj_fgf1, 'cell_class') %>%
+#               #  reclass_by_gene('Agrp', 1, 'neuron') %>%
+#               #  reclass_by_gene('Pomc', 1, 'neuron')
+#               reclass_by_gene_hilo('Agrp', 1, 10, 'other', 'neuron') %>%
+#               reclass_by_gene_hilo('Pomc', 1, 10, 'other', 'neuron')
+#             ),
+    tar_target(xe_obj_cca_td_neuron,
+               xe_obj_01 %>% split_cell_class('neuron') %>% process_xenium(xenium_genes=xenium_genes)),
+    tar_target(xe_obj_cca_td_neuron_2s,
+            xe_obj_cca_td_neuron %>%
+            drop_blah_class %>% 
+            process_xenium(xenium_genes=xenium_genes) %>%
+            transfer_data_cca_00_v02(obj_d5_neuron_01, 'polar_label') %>%
+            labels_from_polar_label %>%
+#             relabel_by_gene_hilo_v02('Agrp', 1, 1000, 'Agrp') %>%
+            drop_blah_labels %>% 
+            process_xenium(xenium_genes=xenium_genes)
+        ),
+    tar_target(xe_obj_cca_td_neuron_labels,
+               transfer_data_cca_00_v02(xe_obj_cca_td_neuron, obj_d5_neuron_01, "labels") %>%
+               relabel_by_gene_hilo_v02('Agrp', 1, 10, 'Agrp')
+               ),
+    tar_target(xe_obj_cca_td_other,
+               xe_obj_01 %>% split_cell_class('other') %>% process_xenium(xenium_genes=xenium_genes)
+               ),
+    tar_target(xe_obj_cca_td_other_2s,
+            xe_obj_cca_td_other %>%
+            drop_blah_class %>% 
+            process_xenium(xenium_genes=xenium_genes) %>%
+            transfer_data_cca_00_v02(obj_d5_other_01, 'polar_label') %>%
+            labels_from_polar_label
+            ),
+    tar_target(xe_obj_cca_td_other_labels,
+               transfer_data_cca_00_v02(xe_obj_cca_td_other, obj_d5_other_01, 'labels')
+               )
+)
+
+
 # stage_02 = list(
   
 #   tar_target(obob_d5_path,
@@ -221,7 +263,7 @@ run_list = list(
   stage_01,
 #   stage_02,
 #   stage_03,
-#   stage_04,
+  stage_04,
 #   stage_05,
 #   stage_04_uni,
 #   stage_05_uni,

@@ -160,6 +160,30 @@ reclass_by_gene_hilo_v02 = function(xe_obj, gene, gene_thr_lo, gene_thr_hi, wron
 }
 
 
+relabel_by_gene_hilo_v02 = function(xe_obj, gene, gene_thr_lo, gene_thr_hi, correct_label){
+    meta = xe_obj %>% `[[`
+    meta = meta %>%
+        mutate(gene_count = xe_obj[["Xenium"]]$counts[gene, ]) %>%
+        mutate(labels = case_when((gene_count >= gene_thr_hi &
+                                      gene_count >= gene_thr_lo &
+                                      !str_detect(labels, gene)) ~ correct_label,
+                                      (gene_count <= gene_thr_hi &
+                                      gene_count >= gene_thr_lo &
+                                      !str_detect(labels, gene)) ~ 'blah',
+                                      TRUE ~ labels)) %>%
+        mutate(labels_prediction.score.max = case_when((gene_count >= gene_thr_hi &
+                                                            gene_count >= gene_thr_lo &
+                                                            !str_detect(labels, gene)) ~ 1,
+                                                            (gene_count <= gene_thr_hi &
+                                                            gene_count >= gene_thr_lo &
+                                                            !str_detect(labels, gene)) ~ 1,
+                                                            TRUE ~ labels_prediction.score.max)) %>%
+        select(-gene_count)
+    xe_obj@meta.data = meta
+    xe_obj
+}
+
+
 add_cell_class_and_polar_label = function(obj_fgf1){
     meta = obj_fgf1 %>%
         `[[` %>% 
@@ -168,6 +192,38 @@ add_cell_class_and_polar_label = function(obj_fgf1){
     obj_fgf1 = obj_fgf1 %>% AddMetaData(meta)
     obj_fgf1
 }
+
+
+
+transfer_data_cca_00_v02 = function(xe_obj, obj_fgf1, refdata_column){
+    xenium_genes = get_xe_genes_v02(xe_obj, obj_fgf1)
+    xenium_genes_all = get_xe_genes_all_v02(xe_obj)
+    obj_fgf1 = obj_fgf1 %>% Seurat::RunUMAP(assay='RNA', slot='counts', features = xenium_genes, return.model = TRUE)
+    refdata = obj_fgf1 %>% `[[` %>% pull(refdata_column)
+    anch = FindTransferAnchors(reference = obj_fgf1, query = xe_obj, features = xenium_genes,  
+                               normalization.method = 'LogNormalize',
+                               reduction = 'cca',
+                               query.assay = 'Xenium',
+                               reference.assay = 'integrated',
+                               recompute.residuals = T,
+                               verbose=TRUE)
+    predictions <- TransferData(anchorset = anch, refdata = refdata, weight.reduction='cca') %>% 
+        dplyr::select(predicted.id, prediction.score.max)
+    predictions[[refdata_column]] = predictions$predicted.id
+    predictions[[paste0(refdata_column, '_prediction.score.max')]] = predictions$prediction.score.max
+    predictions = predictions %>% select(-predicted.id, -prediction.score.max)
+    xe_obj <- AddMetaData(xe_obj, metadata = predictions)
+    Misc(object = xe_obj, slot = paste0("predictions_", refdata_column)) <- predictions
+    xe_obj
+}
+
+
+
+
+
+
+
+
 
 
 
