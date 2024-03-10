@@ -169,6 +169,7 @@ stage_01c = list(
      tar_target(xe_obj_01,
                 xe_obj_00 %>%
                     subset(cells = high_conf_cells_class) %>%
+                    AddMetaData(xe_obj_00 %>% `[[` %>% mutate(cell_class = class)) %>%
                     reclass_by_gene_hilo_v02('Plp1', 20, 20, 'neuron', 'other') %>%
                     reclass_by_gene_hilo_v02('Agrp', 25, 25, 'other', 'neuron') %>%
                     reclass_by_gene_hilo_v02('Pomc', 25, 25, 'other', 'neuron') %>%
