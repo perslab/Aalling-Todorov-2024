@@ -776,6 +776,49 @@ get_seurat_nhg_markers_negbinom = function(seurat_obj, nhgc, grouping_col, group
     markers
 }
 
+get_seurat_nhg_markers_negbinom_nobatch = function(seurat_obj, nhgc, grouping_col, group_a, group_b='', tag=''){
+    nhgc['grouping'] = nhgc[grouping_col]
+    group_a = stringr::str_split(group_a, pattern=fixed('.')) %>% unlist
+    cells_a = nhgc %>%
+        filter(grouping %in% group_a) %>%
+        pull(rowname)
+    if (group_b == ''){
+        group_b = nhgc %>%
+            filter(!(grouping %in% group_a)) %>%
+            pull(grouping) %>%
+            as.character %>%
+            unique %>%
+            paste0(collapse='.')
+    }
+    group_b = stringr::str_split(group_b, pattern=fixed('.')) %>% unlist
+    cells_b = nhgc %>%
+        filter(grouping %in% group_b) %>%
+        pull(rowname)
+
+    expr_matrix = seurat_obj %>% GetAssayData(assay='RNA', layer = 'counts')
+    expressed_cells_count = rowSums(expr_matrix > 0)
+    expr_frac = 0.10
+    expr_ct = expr_matrix %>% dim %>% `[`(2) %>% `*`(expr_frac)
+    features_in_n_cells <- names(expressed_cells_count[expressed_cells_count >= expr_ct])
+    selected_features = features_in_n_cells %>% #only if not running variablefeatures
+        enframe %>% 
+        select(value) %>% 
+        filter(!str_detect(value, '^Gm|^Rik|^mt')) %>%
+        pull(value) 
+
+    markers = Seurat::FindMarkers(seurat_obj, ident.1=cells_a, ident.2=cells_b, assay='RNA', slot="counts", verbose=TRUE,
+                                  min.cells.group = 10, 
+                                  min.cells.feature = 10,
+                                  min.pct = 0.01,
+                                  logfc.threshold = 0,
+                                  test.use='negbinom',
+                                  latent.vars=c('hash.mcl.ID'),
+                                  features=selected_features,
+                                  only.pos = FALSE) 
+    markers['tag'] = tag
+    markers
+}
+
 
 get_seurat_nhg_markers_MAST = function(seurat_obj, nhgc, grouping_col, group_a, group_b='', tag=''){
     nhgc['grouping'] = nhgc[grouping_col]
@@ -803,6 +846,65 @@ get_seurat_nhg_markers_MAST = function(seurat_obj, nhgc, grouping_col, group_a, 
                                   test.use='MAST',
                                   latent.vars=c('hash.mcl.ID'),
                                   only.pos = FALSE) 
+    markers['tag'] = tag
+    markers
+}
+
+
+get_seurat_nhg_markers_nhBulkDESeq = function(seurat_obj, nhm_obj, da_results_nhg, 
+                                              grouping_col, group_a, group_b='', tag=''){
+    # Extract Counts Matrix (ensure it's a sparse matrix)
+    counts_matrix <- GetAssayData(seurat_obj, assay = 'RNA', layer = "counts")
+    # Ensure the matrix is a dgCMatrix for efficient operations
+    counts_matrix <- as(counts_matrix, "dgCMatrix")
+    # convert nhm to a dgc matrix so we can multiply it with the seurat counts dgc matrix
+    nhm_matrix <- as(as.matrix(nhm_obj), "dgCMatrix")
+    # Matrix Multiplication
+    # This effectively sums the counts for each nh
+    summed_counts <- counts_matrix %*% nhm_matrix
+    # Calculate the Number of Cells per Neighborhood
+    cells_per_neighborhood <- colSums(nhm_matrix)
+    # Average Calculation
+    average_expression <- summed_counts / cells_per_neighborhood
+    # Convert to Data Frame for easier handling
+    average_expression_df <- as.data.frame(as.matrix(average_expression))
+    rownames(average_expression_df) <- rownames(counts_matrix)
+    
+    da_results_nhg = da_results_nhg %>%
+        mutate(Nhood = as.integer(Nhood)) %>%
+        mutate(rowname = Nhood) %>%
+        column_to_rownames
+    
+    obj_nh = CreateSeuratObject(counts = summed_counts, meta.data = da_results_nhg)
+    
+    expr_matrix = seurat_obj %>% GetAssayData(assay='RNA', layer = 'counts')
+    expressed_cells_count = rowSums(expr_matrix > 0)
+    features_in_n_cells = names(expressed_cells_count[expressed_cells_count >= 100])
+    
+    Idents(obj_nh) = grouping_col
+    DefaultAssay(obj_nh) = 'RNA'
+
+    expr_matrix = seurat_obj %>% GetAssayData(assay='RNA', layer = 'counts')
+    expressed_cells_count = rowSums(expr_matrix > 0)
+    expr_frac = 0.10
+    expr_ct = expr_matrix %>% dim %>% `[`(2) %>% `*`(expr_frac)
+    features_in_n_cells <- names(expressed_cells_count[expressed_cells_count >= expr_ct])
+    selected_features = features_in_n_cells %>% #only if not running variablefeatures
+        enframe %>% 
+        select(value) %>% 
+        #filter(!str_detect(value, '^Gm|Rik|^mt')) %>%
+        pull(value) 
+    
+    if (group_b == ''){
+        group_b = NULL
+    }
+
+    markers <- Seurat::FindMarkers(object = obj_nh, only.pos = TRUE,
+                          assay = 'RNA',
+                          features = selected_features,
+                          ident.1 = group_a, 
+                          ident.2 = group_b,
+                          test.use = "DESeq2") 
     markers['tag'] = tag
     markers
 }
