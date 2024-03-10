@@ -1,0 +1,7 @@
+>neuron
+expressed: Nrg3, Lingo2, Galntl6, Nrg1, Cntn5, Car10, Grm8, Zfp804b, Pomc, Agrp
+not expressed: Pdgfra, Aqp4, Rax, Slc7a11, Plp1, P3h2
+
+>other
+expressed: Pdgfra, Aqp4, Rax, Slc7a11, Plp1, P3h2, Bmp4
+not expressed: Cntn5, Hs3st4, Zfp804b, Galntl6, Lingo2, Pomc, Agrp

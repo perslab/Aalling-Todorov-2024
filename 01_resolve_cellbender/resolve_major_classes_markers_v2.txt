@@ -1,0 +1,7 @@
+>neuron
+expressed: Pomc, Agrp, Hs3st4, Tenm2, Cntn5, Cntn4, Rbfox1, Kcnip4, Grm8, Zfp804b, Nrg3, Rbfox1
+not expressed: Plp1, Rax, Pdgfra, Slc7a11, Aqp4, Bmp4, Cfap299, Pdzrn3
+
+>other
+expressed: Plp1, Rax, Pdgfra, Slc7a11, Aqp4, Bmp4, Cfap299, Pdzrn3, Slc1a2, Trpm3
+not expressed: Pomc, Agrp, Hs3st4, Rbfox1, Kcnip4, Nrg3
