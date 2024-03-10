@@ -225,7 +225,7 @@ stage_04 = list(
                priority=0.1)
 )
 
-clusters_tibble_lvl1 = qs::qread('../01_milo_cellbender/clusters_tibble_lvl1.qs') #%>% 
+clusters_tibble_lvl1 = qs::qread('clusters_tibble_lvl1.qs') #%>% 
 #     filter(cluster %in% c('Astrocytes', "Oligodendrocytes", "Microglia"))
 stage_04a = tar_map(
   values = clusters_tibble_lvl1,
@@ -273,7 +273,55 @@ stage_04a = tar_map(
              reset_orig.batch %>% 
              prep_obj_for_milo_cb_v01,
              priority=0.0001
-             )
+             ),
+    tar_target(obj_ps2,
+             object %>%
+             set_labels_to_lvl1 %>%
+             prep_obj_for_milo_cb_v01 %>%
+             set_batch_to_lane %>% # do not set batch to lane for cluster splits, will error on design or model matrix. reset later
+             prep_obj_for_milo_cb_v01(set_orig.batch = FALSE) %>%
+             subset_exp_by_time(day) %>%
+             single_split(cluster) %>%
+             reconsitute_rna_seurat %>%
+#              process_seurat(method = "integrate", 
+#                             batch ="batch", # batch to batch
+#                             dims = 30, res = 0.8, k.anchor=25,
+#                             k.weight = 40)
+             run_until_success(function() subset(eval(.)) %>% process_seurat_v2(method = "integrate", 
+                                              batch = "batch",
+                                              dims = 30, res = 0.8, k.anchor=25,
+                                              k.weight = 100),
+                               function() subset(eval(.)) %>% process_seurat_v2(method = "integrate", 
+                                              batch = "batch",
+                                              dims = 30, res = 0.8, k.anchor=25,
+                                              k.weight = 50),
+                               function() subset(eval(.)) %>% process_seurat_v2(method = "integrate", 
+                                              batch = "batch",
+                                              dims = 30, res = 0.8, k.anchor=25,
+                                              k.weight = 20),
+                               function() subset(eval(.)) %>% process_seurat_v2(method = "integrate", 
+                                              batch = "batch",
+                                              dims = 30, res = 0.8, k.anchor=25,
+                                              k.weight = 10),
+                               function() subset(eval(.)) %>% Seurat::SCTransform(assay='RNA',
+                                               method="glmGamPoi",
+                                               vars.to.regress= 'batch',
+                                               vst.flavor="v2",
+                                               verbose=TRUE),
+                               function() subset(eval(.)) %>% Seurat::SCTransform(assay='RNA',
+                                               method="glmGamPoi",
+                                               vars.to.regress= 'orig.batch',
+                                               vst.flavor="v2",
+                                               verbose=TRUE)
+                              ) %>% #reset batch for downstream applications
+             reset_orig.batch %>% 
+             prep_obj_for_milo_cb_v01,
+             priority=0.0001
+             ),
+    tar_target(obj_v4,
+               obj %>% seurat_v5_to_v4),
+    tar_target(obj_ps2_v4,
+            obj_ps2 %>% seurat_v5_to_v4)
 )
 
 stage_04 = list(stage_04, stage_04a)

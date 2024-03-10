@@ -128,3 +128,108 @@ set_empty_labels_lvl2_to_lvl1 = function(obj){
     obj
 }
 
+
+
+process_seurat_v2 <- function(obj, method, ref_datasets = NULL, k.anchor=5,k.weight=100,
+                           res=NULL, features=NULL, dims=NULL, 
+                           batch=NULL, return_model = F, cluster=T, 
+                           type = "seur", nfeats = 5000, neighbor=F) {
+  
+  if(type == "sce") {
+    obj <- CreateSeuratObject(counts = counts(obj))
+  } else {
+    obj <- obj
+  }
+
+  
+  if(!is.null(features)) {
+    features <- rownames(obj)[!grepl(features, rownames(obj))]
+    obj <- subset(obj, features = features)
+  } 
+  
+  if(method == "integrate") {
+    obj <- .integrate_seurat_v2(obj, split = batch, nfeats = nfeats, ref_datasets=ref_datasets, k.anchor = k.anchor, k.weight = k.weight)
+    DefaultAssay(obj) <- "integrated"
+    obj <- ScaleData(obj) %>% RunPCA(.)
+  } else if (method == "log") {
+    
+    if (inherits(obj, "list")) {
+      obj <- obj[[1]]
+    }
+    
+    DefaultAssay(obj) <- "RNA"
+    obj <-
+      NormalizeData(obj) %>%
+      FindVariableFeatures(., selection.method = "vst", nfeatures = nfeats) %>%
+      ScaleData(., vars.to.regress=batch) %>%
+      RunPCA(.)
+  } else if (method == "glm") {
+    obj <-
+      SCTransform(obj, method = "glmGamPoi", batch_var=batch, variable.features.n = nfeats) %>%
+      RunPCA(.)
+  } else if (method == "qpoisson") {
+    obj <-
+      SCTransform(obj, method = "qpoisson", variable.features.n = nfeats, vars.to.regress = batch) %>%
+      RunPCA(.)
+  }
+  
+  if(cluster==T & method == "integrate"){
+    obj <-
+      obj %>%
+      RunUMAP(., dims = seq(dims), return.model=return_model) %>%
+      FindNeighbors(., dims = seq(dims), return.neighbor=neighbor) %>%
+      FindClusters(., resolution = res)
+  } else if(cluster==T & method != "integrate") {
+    obj <-
+      obj %>%
+      RunUMAP(., dims = seq(dims), return.model=return_model) %>%
+      FindNeighbors(., dims = seq(dims), return.neighbor=neighbor) %>%
+      FindClusters(., resolution = res)
+  }
+  
+  return(obj)
+}
+
+
+.integrate_seurat_v2 <- function(obj, split, nfeats, ref_datasets, k.anchor, k.weight) {
+  
+  if(is.list(obj)) {
+    list <- obj
+  } else {
+    DefaultAssay(obj) <- "RNA"
+    list <- SplitObject(obj, split.by = split)
+  }
+  
+  list <- lapply(X = list, FUN = function(x) {
+    if(sum("SCT" %in% names(x@assays))>0) {
+      x[["SCT"]] <- NULL
+    }
+    x <- NormalizeData(x)
+    x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = nfeats)
+  })
+  
+  features <- SelectIntegrationFeatures(object.list = list)
+  
+  list <- lapply(X = list, FUN = function(x) {
+    x <- ScaleData(x, features = features, verbose = FALSE)
+    x <- RunPCA(x, features = features, verbose = FALSE)
+  })
+  
+  features_to_integrate = FindVariableFeatures(obj,
+                                               selection.method = "vst",
+                                               nfeatures = 10000) %>% 
+                          VariableFeatures
+
+  anchors <- FindIntegrationAnchors(object.list = list,
+                                    reference = ref_datasets,
+                                    k.anchor = k.anchor,
+                                    anchor.features = features,
+                                    reduction = "rpca")
+  
+  integrated <- IntegrateData(anchorset = anchors, k.weight=k.weight, features.to.integrate=features_to_integrate)
+  
+  DefaultAssay(integrated) <- "integrated"
+  integrated[["RNA"]] = JoinLayers(JoinLayers(integrated@assays$RNA))
+  return(integrated)
+  
+}
