@@ -218,7 +218,82 @@ transfer_data_cca_00_v02 = function(xe_obj, obj_fgf1, refdata_column){
 }
 
 
+transfer_data_cca_00_polar_label_v02 = function(xe_obj, obj_fgf1, xenium_genes, selected_label) {
+  tryCatch(
+    {
+      xe_obj = xe_obj %>%
+        split_cell_labels(selected_label) %>%
+        process_xenium(xenium_genes=xenium_genes)
+      obj_fgf1 = obj_fgf1 %>%
+        split_cell_labels(selected_label) %>%
+        milo_prep_and_proc
+      xe_obj = transfer_data_cca_00_v02(xe_obj, obj_fgf1, "polar_label")
+      xe_obj
+    },
+    error = function(e) {
+      message("An error occurred: ", e$message)
+      return(NA)
+    }
+  )
+}
 
+
+transfer_data_cca_00_unimodal_v02 = function(xe_obj, obj_fgf1, refdata_column){
+    xenium_genes = get_xe_genes_v02(xe_obj, obj_fgf1)
+    xenium_genes_all = get_xe_genes_all_v02(xe_obj)
+    obj_fgf1 = obj_fgf1 %>% Seurat::RunUMAP(assay='RNA', slot='counts', features = xenium_genes, return.model = TRUE)
+    refdata = obj_fgf1 %>% `[[` %>% pull(refdata_column)
+    # anch <- FindTransferAnchors(reference = obj_fgf1,
+    #                             query = xe_obj,
+    #                             features = xenium_genes,
+    #                             normalization.method = "SCT",
+    #                             reduction='cca',
+    #                             recompute.residuals = T,
+    #                             dims=1:20)
+    anch = FindTransferAnchors(reference = obj_fgf1, query = xe_obj, features = xenium_genes,  
+                               normalization.method = 'LogNormalize',
+                               reduction = 'cca',
+                               query.assay = 'Xenium',
+                               reference.assay = 'integrated',
+                               recompute.residuals = T,
+                               verbose=TRUE)
+    # predictions <- TransferData(anchorset = anch, refdata = refdata, weight.reduction = "cca", dims=1:30) %>% 
+    #     dplyr::select(predicted.id, prediction.score.max)
+    xe_obj = MapQuery(anchorset = anch,
+                           reference = obj_fgf1,
+                           query = xe_obj,
+                           refdata = refdata,
+                           reduction.model = "umap")
+    predictions = xe_obj %>% 
+                           `[[` %>%
+                  dplyr::select(predicted.id, predicted.id.score)
+    predictions[[refdata_column]] = predictions$predicted.id
+    predictions[[paste0(refdata_column, '_prediction.score.max')]] = predictions$predicted.id.score
+    predictions = predictions %>% select(-predicted.id, -predicted.id.score)
+    xe_obj <- AddMetaData(xe_obj, metadata = predictions)
+    Misc(object = xe_obj, slot = paste0("predictions_", refdata_column)) <- predictions
+    xe_obj
+}
+
+
+transfer_data_cca_00_polar_label_unimodal_v02 = function(xe_obj, obj_fgf1, xenium_genes, selected_label) {
+  tryCatch(
+    {
+      xe_obj = xe_obj %>%
+        split_cell_labels(selected_label) %>%
+        process_xenium(xenium_genes=xenium_genes)
+      obj_fgf1 = obj_fgf1 %>%
+        split_cell_labels(selected_label) %>%
+        milo_prep_and_proc
+      xe_obj = transfer_data_cca_00_unimodal_v02(xe_obj, obj_fgf1, "polar_label")
+      xe_obj
+    },
+    error = function(e) {
+      message("An error occurred: ", e$message)
+      return(NA)
+    }
+  )
+}
 
 
 
@@ -230,12 +305,12 @@ transfer_data_cca_00_v02 = function(xe_obj, obj_fgf1, refdata_column){
 
 milo_prep_and_proc = function(object){
 object %>%
- set_labels_to_lvl1 %>%
- prep_obj_for_milo_cb_v01 %>%
- set_batch_to_lane %>% # do not set batch to lane for cluster splits, will error on design or model matrix. reset later
- prep_obj_for_milo_cb_v01(set_orig.batch = FALSE) %>%
-#  subset_exp_by_time(day) %>%
-#  single_split(cluster) %>%
+#  set_labels_to_lvl1 %>%
+#  prep_obj_for_milo_cb_v01 %>%
+#  set_batch_to_lane %>% # do not set batch to lane for cluster splits, will error on design or model matrix. reset later
+#  prep_obj_for_milo_cb_v01(set_orig.batch = FALSE) %>%
+# #  subset_exp_by_time(day) %>%
+# #  single_split(cluster) %>%
  reconsitute_rna_seurat %>%
 #              process_seurat(method = "integrate", 
 #                             batch ="batch", # batch to batch
@@ -279,7 +354,7 @@ object %>%
                                    vars.to.regress= 'orig.batch',
                                    vst.flavor="v2",
                                    verbose=TRUE) %>% run_sct_chaser
-                  ) %>% #reset batch for downstream applications
- reset_orig.batch %>% 
- prep_obj_for_milo_cb_v01
+                  ) # %>% #reset batch for downstream applications
+#  reset_orig.batch %>% 
+#  prep_obj_for_milo_cb_v01
 }

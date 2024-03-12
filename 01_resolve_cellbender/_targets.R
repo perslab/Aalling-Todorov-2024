@@ -229,44 +229,195 @@ stage_04 = list(
 )
 
 
-# stage_02 = list(
-  
-#   tar_target(obob_d5_path,
-#              '../genebasisr_obob5v5/_targets/objects/exp_all_n1xo',
-#              format='file'),
-#   tar_target(obj_fgf1,
-#              qs::qread(obob_d5_path)),
-#   tar_target(xenium_genes_all,
-#             get_xe_genes_all(obj_merged)
+stage_05_neuron = list(
+  tar_target(neuron_labels,
+             obj_d5_neuron_01 %>% `[[` %>% distinct(labels) %>% pull(labels)),
+  tar_target(xe_obj_cca_td_neuron_labels_polar_label_metadata,
+             transfer_data_cca_00_polar_label_v02(xe_obj_cca_td_neuron_labels, obj_d5_neuron_01, xenium_genes, neuron_labels) %>%
+             `[[`,
+             pattern = map(neuron_labels)
+             ),
+  tar_target(xe_obj_cca_td_neuron_labels_polar_label_markers,
+             transfer_data_cca_00_polar_label_v02(xe_obj_cca_td_neuron_labels, obj_d5_neuron_01, xenium_genes, neuron_labels) %>%
+             resolve_find_all_markers(idents='polar_label'),
+             pattern = map(neuron_labels)
+             ),
+  tar_target(xe_obj_cca_td_neuron_2s_labels_polar_label_markers,
+            transfer_data_cca_00_polar_label_v02(xe_obj_cca_td_neuron_2s, obj_d5_neuron_01, xenium_genes, neuron_labels) %>%
+            resolve_find_all_markers(idents='polar_label'),
+            pattern = map(neuron_labels)
+            )
+)
+stage_05_other = list(
+  tar_target(other_labels,
+             obj_d5_other_01 %>% `[[` %>% distinct(labels) %>% pull(labels)),
+  tar_target(xe_obj_cca_td_other_labels_polar_label_metadata,
+             transfer_data_cca_00_polar_label_v02(xe_obj_cca_td_other_labels, obj_d5_other_01, xenium_genes, other_labels) %>%
+             `[[`,
+             pattern = map(other_labels)
+             ),
+  tar_target(xe_obj_cca_td_other_labels_polar_label_markers,
+             transfer_data_cca_00_polar_label_v02(xe_obj_cca_td_other_labels, obj_d5_other_01, xenium_genes, other_labels) %>%
+             resolve_find_all_markers(idents='polar_label'),
+             pattern = map(other_labels)
+             ),
+  tar_target(xe_obj_cca_td_other_2s_labels_polar_label_markers,
+            transfer_data_cca_00_polar_label_v02(xe_obj_cca_td_other_2s, obj_d5_other_01, xenium_genes, other_labels) %>%
+            resolve_find_all_markers(idents='polar_label'),
+            pattern = map(other_labels)
+            )
+)
+stage_05_both = list(
+  tar_combine(neuron_polar_label_metadata,
+              stage_05_neuron %>% tar_select_targets(starts_with("xe_obj_cca_td_neuron_labels_polar_label_metadata"))),
+  tar_combine(neuron_polar_label_markers,
+              stage_05_neuron %>% tar_select_targets(starts_with("xe_obj_cca_td_neuron_labels_polar_label_markers"))),
+  tar_combine(neuron_polar_label_markers_2s,
+              stage_05_neuron %>% tar_select_targets(starts_with("xe_obj_cca_td_neuron_2s_labels_polar_label_markers"))),
+  tar_combine(other_polar_label_metadata,
+              stage_05_other %>% tar_select_targets(starts_with("xe_obj_cca_td_other_labels_polar_label_metadata"))),
+  tar_combine(other_polar_label_markers,
+              stage_05_other %>% tar_select_targets(starts_with("xe_obj_cca_td_other_labels_polar_label_markers"))),
+  tar_combine(other_polar_label_markers_2s,
+              stage_05_other %>% tar_select_targets(starts_with("xe_obj_cca_td_other_2s_labels_polar_label_markers"))),              
+  tar_target(polar_label_meta,
+             bind_rows(neuron_polar_label_metadata,
+                       other_polar_label_metadata)
+             ),
+  tar_target(polar_label_markers,
+            bind_rows(neuron_polar_label_markers,
+                      other_polar_label_markers)
+             ),
+  tar_target(polar_label_markers_2s,
+            bind_rows(neuron_polar_label_markers_2s,
+                      other_polar_label_markers_2s)
+             ),              
+  tar_target(xe_obj_cca_td_3s,
+             merge(xe_obj_cca_td_neuron_labels, xe_obj_cca_td_other_labels) %>%
+             AddMetaData(metadata = polar_label_meta[c('polar_label', 'polar_label_prediction.score.max')]) %>%
+             process_xenium(xenium_genes=xenium_genes)
+             ),
+  tar_target(xe_obj_cca_td_2s,
+            merge(xe_obj_cca_td_neuron_2s, xe_obj_cca_td_other_2s) %>%
+            process_xenium(xenium_genes=xenium_genes)
+            )
+)
+
+
+stage_04_uni = list(
+#     tar_target(xe_obj_cca_td_class,
+#                transfer_data_cca_00_unimodal_v02(obj_merged_sct, obj_fgf1, 'cell_class') %>%
+#               #  reclass_by_gene('Agrp', 1, 'neuron') %>%
+#               #  reclass_by_gene('Pomc', 1, 'neuron')
+#               reclass_by_gene_hilo('Agrp', 1, 10, 'other', 'neuron') %>%
+#               reclass_by_gene_hilo('Pomc', 1, 10, 'other', 'neuron')
 #             ),
-#   tar_target(xenium_genes,
-#              get_xe_genes(obj_merged, obj_fgf1)
-#             ),
-#   tar_target(obj_fgf1_sct_xeg,
-#              obj_fgf1 %>% 
-#              Seurat::RunUMAP(assay='SCT', slot='counts', features = xenium_genes, return.model = TRUE)
-#              ),
-#   tar_target(obj_merged_sct,
-#              obj_merged %>%
-#              filter_down_cells %>%
-#              sc_transform_resolve %>%
-#              Seurat::RunUMAP(assay='SCT', slot='counts', features = xenium_genes, return.model = TRUE)
-#             )
-#   )
+    tar_target(xe_obj_cca_td_neuron_uni,
+               xe_obj_01 %>% split_cell_class('neuron') %>% process_xenium(xenium_genes=xenium_genes)),
+    tar_target(xe_obj_cca_td_neuron_2s_uni,
+            xe_obj_cca_td_neuron_uni %>%
+            drop_blah_class %>% 
+            process_xenium(xenium_genes=xenium_genes) %>%
+            transfer_data_cca_00_unimodal_v02(obj_d5_neuron_01, 'polar_label') %>%
+            labels_from_polar_label %>%
+#             relabel_by_gene_hilo_v02('Agrp', 1, 1000, 'Agrp') %>%
+            drop_blah_labels %>% 
+            process_xenium(xenium_genes=xenium_genes)
+        ),
+    tar_target(xe_obj_cca_td_neuron_labels_uni,
+               transfer_data_cca_00_unimodal_v02(xe_obj_cca_td_neuron_uni, obj_d5_neuron_01, "labels") %>%
+               relabel_by_gene_hilo_v02('Agrp', 1, 10, 'Agrp')
+               ),
+    tar_target(xe_obj_cca_td_other_uni,
+               xe_obj_01 %>% split_cell_class('other') %>% process_xenium(xenium_genes=xenium_genes)
+               ),
+    tar_target(xe_obj_cca_td_other_2s_uni,
+            xe_obj_cca_td_other_uni %>%
+            drop_blah_class %>% 
+            process_xenium(xenium_genes=xenium_genes) %>%
+            transfer_data_cca_00_unimodal_v02(obj_d5_other_01, 'polar_label') %>%
+            labels_from_polar_label
+            ),
+    tar_target(xe_obj_cca_td_other_labels_uni,
+               transfer_data_cca_00_unimodal_v02(xe_obj_cca_td_other_uni, obj_d5_other_01, 'labels')
+               )
+)
+stage_05_neuron_uni = list(
+  tar_target(neuron_labels_uni,
+             obj_d5_neuron_01 %>% `[[` %>% distinct(labels) %>% pull(labels)),
+  tar_target(xe_obj_cca_td_neuron_labels_polar_label_metadata_uni,
+             transfer_data_cca_00_polar_label_unimodal_v02(xe_obj_cca_td_neuron_labels, obj_d5_neuron_01, xenium_genes, neuron_labels) %>%
+             `[[`,
+             pattern = map(neuron_labels_uni)
+             ),
+  tar_target(xe_obj_cca_td_neuron_labels_polar_label_markers_uni,
+             transfer_data_cca_00_polar_label_unimodal_v02(xe_obj_cca_td_neuron_labels, obj_d5_neuron_01, xenium_genes, neuron_labels) %>%
+             resolve_find_all_markers(idents='polar_label'),
+             pattern = map(neuron_labels_uni)
+             )
+)
+stage_05_other_uni = list(
+  tar_target(other_labels_uni,
+             obj_d5_other_01 %>% `[[` %>% distinct(labels) %>% pull(labels)),
+  tar_target(xe_obj_cca_td_other_labels_polar_label_metadata_uni,
+             transfer_data_cca_00_polar_label_unimodal_v02(xe_obj_cca_td_other_labels, obj_d5_other_01, xenium_genes, other_labels) %>%
+             `[[`,
+             pattern = map(other_labels_uni)
+             ),
+  tar_target(xe_obj_cca_td_other_labels_polar_label_markers_uni,
+             transfer_data_cca_00_polar_label_unimodal_v02(xe_obj_cca_td_other_labels, obj_d5_other_01, xenium_genes, other_labels) %>%
+             resolve_find_all_markers(idents='polar_label'),
+             pattern = map(other_labels_uni)
+             )
+)
+stage_05_both_uni = list(
+  tar_combine(neuron_polar_label_metadata_uni,
+              stage_05_neuron_uni %>% tar_select_targets(starts_with("xe_obj_cca_td_neuron_labels_polar_label_metadata_uni"))),
+  tar_combine(neuron_polar_label_markers_uni,
+              stage_05_neuron_uni %>% tar_select_targets(starts_with("xe_obj_cca_td_neuron_labels_polar_label_markers_uni"))),
+  tar_combine(other_polar_label_metadata_uni,
+              stage_05_other_uni %>% tar_select_targets(starts_with("xe_obj_cca_td_other_labels_polar_label_metadata_uni"))),
+  tar_combine(other_polar_label_markers_uni,
+              stage_05_other_uni %>% tar_select_targets(starts_with("xe_obj_cca_td_other_labels_polar_label_markers_uni"))),            
+  tar_target(polar_label_meta_uni,
+             bind_rows(neuron_polar_label_metadata_uni,
+                       other_polar_label_metadata_uni)
+             ),
+  tar_target(polar_label_markers_uni,
+            bind_rows(neuron_polar_label_markers_uni,
+                      other_polar_label_markers_uni)
+             ),           
+  tar_target(xe_obj_cca_td_3s_uni,
+             merge(xe_obj_cca_td_neuron_labels_uni, xe_obj_cca_td_other_labels_uni) %>%
+             AddMetaData(metadata = polar_label_meta[c('polar_label', 'polar_label_prediction.score.max')]) %>%
+             process_xenium(xenium_genes=xenium_genes)
+             ),
+  tar_target(xe_obj_cca_td_2s_uni,
+            merge(xe_obj_cca_td_neuron_2s_uni, xe_obj_cca_td_other_2s_uni) %>%
+             AddMetaData(metadata = polar_label_meta[c('polar_label', 'polar_label_prediction.score.max')]) %>%
+             process_xenium(xenium_genes=xenium_genes)
+            )
+)
+stage_05_uni = list(stage_05_neuron_uni, stage_05_other_uni, stage_05_both_uni)
 
 
 
 stage_01 = list(stage_01a, stage_01b, stage_01c)
 
+stage_05 = list(stage_05_neuron,
+                stage_05_other, 
+                stage_05_both
+               )
+stage_05_uni = list(stage_05_neuron_uni, stage_05_other_uni, stage_05_both_uni)
 
 run_list = list(
   stage_01,
 #   stage_02,
 #   stage_03,
   stage_04,
-#   stage_05,
-#   stage_04_uni,
-#   stage_05_uni,
+  stage_05,
+  stage_04_uni,
+  stage_05_uni,
   list()
 )
 
