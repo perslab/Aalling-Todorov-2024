@@ -38,6 +38,11 @@ set_labels_to_lvl1 = function(obj){
     obj
 }
 
+set_labels_to_lvl2 = function(obj){
+    obj@meta.data = obj@meta.data %>% mutate(labels = labels_lvl2)
+    obj
+}
+
 set_labels_to_labels_chunk = function(obj){
     obj@meta.data = obj@meta.data %>% mutate(labels = labels_chunk)
     obj

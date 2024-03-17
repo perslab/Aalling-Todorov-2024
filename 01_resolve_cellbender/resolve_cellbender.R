@@ -296,10 +296,76 @@ transfer_data_cca_00_polar_label_unimodal_v02 = function(xe_obj, obj_fgf1, xeniu
 }
 
 
+make_RCTD_ref = function(obj, ident){
+    Idents(obj) <- ident
+    allowed_idents = obj %>% `[[` %>% group_by(.data[[ident]]) %>% summarise(n=n()) %>% filter(n >=25) %>% select(-n) %>% pull
+    selected_cells = obj %>% `[[` %>% filter(.data[[ident]] %in% allowed_idents) %>% rownames
+    obj = obj %>% subset(cells = selected_cells )
+    counts <- GetAssayData(obj, assay = "RNA", slot = "counts")
+    cluster <- obj[[ident]] %>% rownames_to_column %>% deframe %>% as.factor
+    nUMI <- obj[['nCount_RNA']] %>% rownames_to_column %>% deframe
+    nUMI <- colSums(counts)
+    reference <- Reference(counts, cluster, nUMI)
+    reference
+}
 
 
+make_RCTD_query = function(xe_obj, fov){
+    query.counts <- GetAssayData(xe_obj, assay = "Xenium", slot = "counts")[, Cells(xe_obj[[fov]])]
+    coords <- GetTissueCoordinates(xe_obj[[fov]], which = "centroids")
+    rownames(coords) <- coords$cell
+    coords$cell <- NULL
+    query <- SpatialRNA(coords, query.counts, colSums(query.counts))
+    query
+}
 
 
+get_rctd_annotations_df = function(rctd){
+    rctd %>% `@`('results') %>% `$`('results_df')
+}
+
+
+label_transfer_to_fov = function(xe_obj, rctd_ref, fov, confidence_threshold = 5, doublet_threshold=20){
+    fov_annot = xe_obj %>% 
+        make_RCTD_query(fov) %>%
+        create.RCTD(rctd_ref, max_cores = 1, CONFIDENCE_THRESHOLD = confidence_threshold, DOUBLET_THRESHOLD=doublet_threshold) %>%
+        run.RCTD(doublet_mode = "doublet") %>%
+        get_rctd_annotations_df
+    fov_annot
+}
+
+
+run_rctd = function(xe_obj, ref_obj, transfer_col, confidence_threshold = 5, doublet_threshold=20, return_obj=FALSE, misc_slot_name='rctd'){
+    rctd_ref = make_RCTD_ref(ref_obj, transfer_col)
+    fov.1_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    fov.2_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.2', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    fov.3_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.3', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    fov.4_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.4', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    fov.5_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.5', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    fov.6_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.6', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    fov.7_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.7', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    fov.8_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.8', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    annot_df = bind_rows(fov.1_annot,
+                         fov.2_annot,
+                         fov.3_annot,
+                         fov.4_annot,
+                         fov.5_annot,
+                         fov.6_annot,
+                         fov.7_annot,
+                         fov.8_annot)
+    if (return_obj){
+        xe_obj = xe_obj@misc[[misc_slot_name]] = annot_df
+        xe_obj
+    } else {
+        annot_df
+    }
+}
+
+
+store_in_misc = function(obj, slot, payload){
+    Misc(object = obj, slot = slot) <- payload
+    obj
+}
 
 
 

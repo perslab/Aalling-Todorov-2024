@@ -1,0 +1,3 @@
+negbinom:
+  script: _targets_negbinom.R
+  store: _targets_negbinom/
