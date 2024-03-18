@@ -325,26 +325,81 @@ get_rctd_annotations_df = function(rctd){
 }
 
 
-label_transfer_to_fov = function(xe_obj, rctd_ref, fov, confidence_threshold = 5, doublet_threshold=20){
+label_transfer_to_fov = function(xe_obj, rctd_ref, fov, 
+                                 gene_cutoff = 0.000125,
+                                 fc_cutoff = 0.5,
+                                 gene_cutoff_reg = 2e-04,
+                                 fc_cutoff_reg = 0.75,
+                                 confidence_threshold = 5, doublet_threshold=20){
     fov_annot = xe_obj %>% 
         make_RCTD_query(fov) %>%
-        create.RCTD(rctd_ref, max_cores = 1, CONFIDENCE_THRESHOLD = confidence_threshold, DOUBLET_THRESHOLD=doublet_threshold) %>%
+        create.RCTD(rctd_ref, max_cores = 1, 
+                    gene_cutoff = gene_cutoff,
+                    fc_cutoff = fc_cutoff,
+                    gene_cutoff_reg = gene_cutoff_reg,
+                    fc_cutoff_reg = fc_cutoff_reg,
+                    CONFIDENCE_THRESHOLD = confidence_threshold, DOUBLET_THRESHOLD=doublet_threshold) %>%
         run.RCTD(doublet_mode = "doublet") %>%
         get_rctd_annotations_df
     fov_annot
 }
 
 
-run_rctd = function(xe_obj, ref_obj, transfer_col, confidence_threshold = 5, doublet_threshold=20, return_obj=FALSE, misc_slot_name='rctd'){
+run_rctd = function(xe_obj, ref_obj, transfer_col,
+                    gene_cutoff = 0.000125,
+                    fc_cutoff = 0.5,
+                    gene_cutoff_reg = 2e-04,
+                    fc_cutoff_reg = 0.75,                    
+                    confidence_threshold = 5, doublet_threshold=20, return_obj=FALSE, misc_slot_name='rctd'){
     rctd_ref = make_RCTD_ref(ref_obj, transfer_col)
-    fov.1_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
-    fov.2_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.2', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
-    fov.3_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.3', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
-    fov.4_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.4', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
-    fov.5_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.5', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
-    fov.6_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.6', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
-    fov.7_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.7', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
-    fov.8_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.8', confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    fov.1_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov', 
+                                        gene_cutoff = gene_cutoff,
+                                        fc_cutoff = fc_cutoff,
+                                        gene_cutoff_reg = gene_cutoff_reg,
+                                        fc_cutoff_reg = fc_cutoff_reg,
+                                        confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    fov.2_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.2', 
+                                        gene_cutoff = gene_cutoff,
+                                        fc_cutoff = fc_cutoff,
+                                        gene_cutoff_reg = gene_cutoff_reg,
+                                        fc_cutoff_reg = fc_cutoff_reg,
+                                        confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    fov.3_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.3', 
+                                        gene_cutoff = gene_cutoff,
+                                        fc_cutoff = fc_cutoff,
+                                        gene_cutoff_reg = gene_cutoff_reg,
+                                        fc_cutoff_reg = fc_cutoff_reg,
+                                        confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    fov.4_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.4', 
+                                        gene_cutoff = gene_cutoff,
+                                        fc_cutoff = fc_cutoff,
+                                        gene_cutoff_reg = gene_cutoff_reg,
+                                        fc_cutoff_reg = fc_cutoff_reg,
+                                        confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    fov.5_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.5', 
+                                        gene_cutoff = gene_cutoff,
+                                        fc_cutoff = fc_cutoff,
+                                        gene_cutoff_reg = gene_cutoff_reg,
+                                        fc_cutoff_reg = fc_cutoff_reg,
+                                        confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    fov.6_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.6', 
+                                        gene_cutoff = gene_cutoff,
+                                        fc_cutoff = fc_cutoff,
+                                        gene_cutoff_reg = gene_cutoff_reg,
+                                        fc_cutoff_reg = fc_cutoff_reg,
+                                        confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    fov.7_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.7', 
+                                        gene_cutoff = gene_cutoff,
+                                        fc_cutoff = fc_cutoff,
+                                        gene_cutoff_reg = gene_cutoff_reg,
+                                        fc_cutoff_reg = fc_cutoff_reg,
+                                        confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+    fov.8_annot = label_transfer_to_fov(xe_obj, rctd_ref, 'fov.8', 
+                                        gene_cutoff = gene_cutoff,
+                                        fc_cutoff = fc_cutoff,
+                                        gene_cutoff_reg = gene_cutoff_reg,
+                                        fc_cutoff_reg = fc_cutoff_reg,
+                                        confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
     annot_df = bind_rows(fov.1_annot,
                          fov.2_annot,
                          fov.3_annot,
@@ -367,6 +422,61 @@ store_in_misc = function(obj, slot, payload){
     obj
 }
 
+
+transfer_data_rctd_polar_label = function(xe_obj, obj_fgf1, selected_label,
+                    gene_cutoff = 0.000125,
+                    fc_cutoff = 0.5,
+                    gene_cutoff_reg = 2e-04,
+                    fc_cutoff_reg = 0.75,                    
+                    confidence_threshold = 5, doublet_threshold=20){
+  tryCatch(
+    {
+      xe_selected_cells = xe_obj %>% `[[` %>% filter(labels == selected_label) %>% rownames
+      xe_obj = xe_obj %>%
+        subset(cells = xe_selected_cells)
+      fgf1_selected_cells = obj_fgf1 %>% `[[` %>% filter(labels == selected_label) %>% rownames
+      obj_fgf1 = obj_fgf1 %>%
+        subset(cells = fgf1_selected_cells)
+      annot_df = run_rctd(xe_obj, obj_fgf1, 'polar_label',
+                          gene_cutoff = gene_cutoff,
+                          fc_cutoff = fc_cutoff,
+                          gene_cutoff_reg = gene_cutoff_reg,
+                          fc_cutoff_reg = fc_cutoff_reg,
+                          confidence_threshold = confidence_threshold, doublet_threshold=doublet_threshold)
+      annot_df
+    },
+    error = function(e) {
+      message("An error occurred: ", e$message)
+      return(NA)
+    }
+  )
+}
+
+
+munge_rtcd_meta_data = function(obj){
+    new_meta = obj %>% `[[` %>%
+        rowwise %>% 
+        mutate(polarity = case_when(!is.na(polar_label) ~ str_split(polar_label, '\\.') %>% unlist %>% `[`(2),
+                                    TRUE ~ 'none')) %>% 
+        mutate(polar_label = case_when(is.na(polar_label) ~ paste0(labels, '.none'),
+                                       TRUE ~ polar_label)) %>%
+        mutate(polar_label = case_when(is.na(polar_label) ~ paste0(labels, '.none'),
+                                       TRUE ~ polar_label)) %>% 
+        mutate(polar_label_spot_class = case_when(is.na(polar_label_spot_class) ~ 'not_run',
+                                                  TRUE ~ polar_label_spot_class)) %>%
+        mutate(labels_spot_class = case_when(is.na(labels_spot_class) ~ 'not_run',
+                                             TRUE ~ labels_spot_class)) %>%
+        ungroup
+    obj = obj %>% AddMetaData(new_meta)
+}
+
+# .@meta.data %>%
+#                          rowwise %>% 
+#                          mutate(polarity = case_when(!is.na(polar_label) ~ str_split(polar_label, '\\.') %>% unlist %>% `[`(2),
+#                                                      TRUE ~ 'none')) %>% 
+#                          mutate(polar_label = case_when(is.na(polar_label) ~ paste0(labels, '.none'),
+#                                                         TRUE ~ polar_label)) %>% 
+#                          ungroup
 
 
 milo_prep_and_proc = function(object){

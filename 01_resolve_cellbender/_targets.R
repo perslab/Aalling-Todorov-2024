@@ -432,56 +432,146 @@ stage_06 = list(
     tar_target(annot_df_labels_neuron,
                run_rctd(obj_neuron_01, obj_d5_neuron, 'labels'),
                packages=c("tidyverse", "Seurat", "spacexr")),
+    tar_target(rctd_neuron_selected_cells,
+               annot_df_labels_neuron %>% 
+                   filter(spot_class != 'reject') %>% 
+                   rownames),
+    tar_target(rctd_other_selected_cells,
+               annot_df_labels_other %>% 
+               filter(spot_class != 'reject') %>% 
+               rownames),
+    tar_target(obj_neuron_02,
+               obj_neuron_01 %>% 
+               subset(cells = rctd_neuron_selected_cells) %>%
+               AddMetaData(annot_df_labels_neuron %>%
+                           mutate(labels = first_type,
+                                  labels_spot_class = spot_class) %>%
+                           select(labels, labels_spot_class)) %>%
+               store_in_misc('rctd_labels_annot_df', annot_df_labels_neuron) %>%
+               process_xenium
+          ),
+    tar_target(obj_other_02,
+               obj_other_01 %>% 
+               subset(cells = rctd_other_selected_cells) %>%
+               AddMetaData(annot_df_labels_other %>%
+                           mutate(labels = first_type,
+                                  labels_spot_class = spot_class) %>%
+                           select(labels, labels_spot_class)) %>%
+               store_in_misc('rctd_labels_annot_df', annot_df_labels_other) %>%
+               process_xenium
+      ),
+    tar_target(neuron_labels_rctd,
+               obj_d5_neuron %>% `[[` %>% distinct(labels) %>% pull(labels)),
+    tar_target(annot_df_polar_label_neuron,
+               transfer_data_rctd_polar_label(obj_neuron_02, obj_d5_neuron, neuron_labels_rctd,
+                                              gene_cutoff = 0.000001,
+                                              fc_cutoff = 0.05,
+                                              gene_cutoff_reg = 0.000001,
+                                              fc_cutoff_reg = 0.05),
+               pattern = map(neuron_labels_rctd),
+               packages=c("tidyverse", "Seurat", "spacexr")
+               ),
+    tar_target(other_labels_rctd,
+               obj_d5_other %>% `[[` %>% distinct(labels) %>% pull(labels)),
+    tar_target(annot_df_polar_label_other,
+               transfer_data_rctd_polar_label(obj_other_02, obj_d5_other, other_labels_rctd,
+                                              gene_cutoff = 0.000001,
+                                              fc_cutoff = 0.05,
+                                              gene_cutoff_reg = 0.000001,
+                                              fc_cutoff_reg = 0.05),
+               pattern = map(other_labels_rctd),
+               packages=c("tidyverse", "Seurat", "spacexr")
+               )
+)
+
+stage_06_combine = list(
+  tar_combine(annot_df_polar_label_other_all,
+              stage_06 %>% tar_select_targets(starts_with("annot_df_polar_label_other"))),
+  tar_combine(annot_df_polar_label_neuron_all,
+              stage_06 %>% tar_select_targets(starts_with("annot_df_polar_label_neuron"))),
+  tar_target(obj_other_03,
+             obj_other_02 %>%
+             AddMetaData(annot_df_polar_label_other_all %>%
+                         mutate(polar_label = first_type,
+                                polar_label_spot_class = spot_class) %>%
+                         select(polar_label, polar_label_spot_class)) %>%
+             munge_rtcd_meta_data %>%
+             store_in_misc('rctd_annot_df_polar_label_other_all', annot_df_polar_label_other_all) %>%
+             process_xenium(xenium_genes=xenium_genes)),
+  tar_target(obj_neuron_03,
+             obj_neuron_02 %>%
+             AddMetaData(annot_df_polar_label_neuron_all %>%
+                         mutate(polar_label = first_type,
+                                polar_label_spot_class = spot_class) %>%
+                         select(polar_label, polar_label_spot_class)) %>%
+             munge_rtcd_meta_data %>%
+             store_in_misc('rctd_annot_df_polar_label_other_all', annot_df_polar_label_other_all) %>%
+             process_xenium(xenium_genes=xenium_genes)),
+  tar_target(obj_rctd_merged_00,
+             merge(obj_neuron_03, obj_other_03) %>%
+             JoinLayers %>%
+             process_xenium(xenium_genes=xenium_genes)),
+  tar_target(obj_neuron_04,
+             obj_neuron_03 %>% subset(subset = labels_spot_class != 'reject') %>% subset(subset = polar_label_spot_class != 'reject') %>%
+             process_xenium(xenium_genes=xenium_genes)),
+  tar_target(obj_other_04,
+             obj_other_03 %>% subset(subset = labels_spot_class != 'reject') %>% subset(subset = polar_label_spot_class != 'reject') %>%
+             process_xenium(xenium_genes=xenium_genes)),
+  tar_target(obj_rctd_merged_01,
+             merge(obj_neuron_04,
+                   obj_other_04) %>%
+             JoinLayers %>%
+             process_xenium(xenium_genes=xenium_genes))
+)
+
+stage_06a = list(
+#some variations
     tar_target(rctd_non_Agrp_selected_neuron_cells,
                c(annot_df_labels_neuron %>% filter(first_type != 'Agrp') %>% rownames,
                  annot_df_labels_neuron %>% filter(first_type == 'Agrp', spot_class == 'reject') %>% rownames)),
     tar_target(annot_df_labels_neuron_non_Agrp,
                run_rctd(obj_neuron_01 %>% subset(cells = rctd_non_Agrp_selected_neuron_cells), 
-                        obj_d5_neuron,
+                        obj_d5_neuron %>% subset(subset = labels != 'Agrp'),
                         'labels'),
-               packages=c("tidyverse", "Seurat", "spacexr"))
-)
-
-stage_06a = list(
-#some variations
+               packages=c("tidyverse", "Seurat", "spacexr")),
     tar_target(annot_df_labels_neuron_non_Agrp_1_20,
                run_rctd(obj_neuron_01 %>% subset(cells = rctd_non_Agrp_selected_neuron_cells), 
-                        obj_d5_neuron,
+                        obj_d5_neuron %>% subset(subset = labels != 'Agrp'),
                         'labels',
                         confidence_threshold=1,
                         doublet_threshold=20),
                packages=c("tidyverse", "Seurat", "spacexr")),
     tar_target(annot_df_labels_neuron_non_Agrp_2_20,
                run_rctd(obj_neuron_01 %>% subset(cells = rctd_non_Agrp_selected_neuron_cells), 
-                        obj_d5_neuron,
+                        obj_d5_neuron %>% subset(subset = labels != 'Agrp'),
                         'labels',
                         confidence_threshold=2,
                         doublet_threshold=20),
                packages=c("tidyverse", "Seurat", "spacexr")),
     tar_target(annot_df_labels_neuron_non_Agrp_3_20,
                run_rctd(obj_neuron_01 %>% subset(cells = rctd_non_Agrp_selected_neuron_cells), 
-                        obj_d5_neuron,
+                        obj_d5_neuron %>% subset(subset = labels != 'Agrp'),
                         'labels',
                         confidence_threshold=3,
                         doublet_threshold=20),
                packages=c("tidyverse", "Seurat", "spacexr")),
     tar_target(annot_df_labels_neuron_non_Agrp_4_20,
                run_rctd(obj_neuron_01 %>% subset(cells = rctd_non_Agrp_selected_neuron_cells), 
-                        obj_d5_neuron,
+                        obj_d5_neuron %>% subset(subset = labels != 'Agrp'),
                         'labels',
                         confidence_threshold=4,
                         doublet_threshold=20),
                packages=c("tidyverse", "Seurat", "spacexr")),
     tar_target(annot_df_labels_neuron_non_Agrp_1_10,
                run_rctd(obj_neuron_01 %>% subset(cells = rctd_non_Agrp_selected_neuron_cells), 
-                        obj_d5_neuron,
+                        obj_d5_neuron %>% subset(subset = labels != 'Agrp'),
                         'labels',
                         confidence_threshold=1,
                         doublet_threshold=10),
                packages=c("tidyverse", "Seurat", "spacexr")),
     tar_target(annot_df_labels_neuron_non_Agrp_1_5,
                run_rctd(obj_neuron_01 %>% subset(cells = rctd_non_Agrp_selected_neuron_cells), 
-                        obj_d5_neuron,
+                        obj_d5_neuron %>% subset(subset = labels != 'Agrp'),
                         'labels',
                         confidence_threshold=1,
                         doublet_threshold=5),
@@ -504,7 +594,7 @@ stage_05 = list(stage_05_neuron,
                )
 stage_05_uni = list(stage_05_neuron_uni, stage_05_other_uni, stage_05_both_uni)
 
-stage_06 = list(stage_06, stage_06a)
+stage_06 = list(stage_06, stage_06a, stage_06_combine)
 
 run_list = list(
   stage_01,
