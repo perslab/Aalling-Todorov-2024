@@ -300,7 +300,9 @@ stage_05_both = list(
   tar_target(xe_obj_cca_td_2s,
             merge(xe_obj_cca_td_neuron_2s, xe_obj_cca_td_other_2s) %>%
             process_xenium(xenium_genes=xenium_genes)
-            )
+            ),
+  tar_target(xe_obj_cca_td_2s_sv4,
+             xe_obj_cca_td_2s %>% seurat_v5_to_v4_xe)
 )
 
 
@@ -521,7 +523,9 @@ stage_06_combine = list(
              merge(obj_neuron_04,
                    obj_other_04) %>%
              JoinLayers %>%
-             process_xenium(xenium_genes=xenium_genes))
+             process_xenium(xenium_genes=xenium_genes)),
+  tar_target(obj_rctd_merged_01_sv4,
+             obj_rctd_merged_01 %>% seurat_v5_to_v4_xe)
 )
 
 stage_06a = list(
@@ -600,10 +604,10 @@ run_list = list(
   stage_01,
 #   stage_02,
 #   stage_03,
-#   stage_04,
-#   stage_05,
-#   stage_04_uni,
-#   stage_05_uni,
+  stage_04,
+  stage_05,
+  stage_04_uni,
+  stage_05_uni,
   stage_06,
   list()
 )

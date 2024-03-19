@@ -479,6 +479,12 @@ munge_rtcd_meta_data = function(obj){
 #                          ungroup
 
 
+seurat_v5_to_v4_xe = function(obj){
+    obj[['Xenium']] = as(object = obj[["Xenium"]], Class = "Assay")
+    obj
+}
+
+
 milo_prep_and_proc = function(object){
 object %>%
 #  set_labels_to_lvl1 %>%
