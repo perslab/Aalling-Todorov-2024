@@ -209,6 +209,8 @@ stage_03 = list(
                obj_cb_neuron_01 %>% seurat_v5_to_v4),
     tar_target(obj_cb_other_00_sv4,
                obj_cb_other_00 %>% seurat_v5_to_v4),
+    tar_target(obj_cb_other_01_sv4,
+               obj_cb_other_01 %>% seurat_v5_to_v4),
     tar_target(obj_cb_other_02_sv4,
                obj_cb_other_02 %>% seurat_v5_to_v4),
     tar_target(obj_cb_tany_sv4,
